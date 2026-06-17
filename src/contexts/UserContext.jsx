@@ -210,3 +210,7 @@ export function useAuth() {
     if (!context) throw new Error('useAuth deve ser usado dentro de UserProvider');
     return context;
 }
+
+export function useUsers() {
+    return useContext(UserContext);
+}
