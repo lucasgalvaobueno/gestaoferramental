@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const UserContext = createContext();
 
@@ -17,44 +18,36 @@ const encode = (str) => {
     catch { return btoa(str); }
 };
 
-// ── Usuário admin padrão (seed) ──────────────────────────────
-const DEFAULT_ADMIN = {
-    id: 'admin-seed',
-    nome: 'Administrador',
-    matricula: '00001',
-    email: 'admin@sistema.com',
-    senhaHash: encode('admin123'),
-    cargo: 'Administrador de Sistema',
-    nivel: 'admin',
-    paineis: ALL_PANELS.map(p => p.key),
-    ativo: true,
-    senhaTemporaria: false,
-};
-
-// ── Provider ─────────────────────────────────────────────────
 export function UserProvider({ children }) {
-    const [users, setUsers] = useState(() => {
-        const stored = localStorage.getItem('@gestao/users');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            // Garante que o admin seed sempre existe
-            if (!parsed.some(u => u.id === 'admin-seed')) {
-                return [DEFAULT_ADMIN, ...parsed];
-            }
-            return parsed;
-        }
-        return [DEFAULT_ADMIN];
-    });
-
+    const [users, setUsers] = useState([]);
     const [currentUser, setCurrentUser] = useState(() => {
         const stored = localStorage.getItem('@gestao/session');
         return stored ? JSON.parse(stored) : null;
     });
+    const [loading, setLoading] = useState(true);
 
-    // Persiste usuários
+    const fetchUsers = async () => {
+        const { data, error } = await supabase.from('usuarios').select('*');
+        if (error) {
+            console.error('Erro ao buscar usuários:', error);
+            return;
+        }
+        setUsers(data || []);
+        setLoading(false);
+    };
+
     useEffect(() => {
-        localStorage.setItem('@gestao/users', JSON.stringify(users));
-    }, [users]);
+        fetchUsers();
+        
+        // Subscription para tempo real
+        const subscription = supabase.channel('usuarios-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, payload => {
+                fetchUsers();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(subscription); };
+    }, []);
 
     // ── Helpers ────────────────────────────────────────────────
     const saveSession = (user) => {
@@ -68,134 +61,152 @@ export function UserProvider({ children }) {
     };
 
     // ── Autenticação ───────────────────────────────────────────
-    const login = (email, senha) => {
-        const user = users.find(u =>
-            u.email.toLowerCase() === email.trim().toLowerCase() &&
-            u.senhaHash === encode(senha) &&
-            u.ativo
-        );
-        if (!user) {
-            const exists = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-            if (exists && !exists.ativo) return { success: false, reason: 'inactive' };
+    const login = async (email, senha) => {
+        const { data, error } = await supabase.from('usuarios')
+            .select('*')
+            .ilike('email', email.trim())
+            .single();
+
+        if (error || !data) {
             return { success: false, reason: 'invalid' };
         }
-        saveSession(user);
-        if (user.senhaTemporaria) return { success: true, redirect: '/alterar-senha' };
+
+        if (!data.ativo) {
+            return { success: false, reason: 'inactive' };
+        }
+
+        if (data.senhahash !== encode(senha)) {
+            return { success: false, reason: 'invalid' };
+        }
+
+        saveSession(data);
+        if (data.senhatemporaria) return { success: true, redirect: '/alterar-senha' };
         return { success: true, redirect: '/home' };
     };
 
     const logout = () => clearSession();
 
     // Mantém compatibilidade com updateUser(name, photo) do Navbar antigo
-    const updateUser = (name, photo) => {
+    const updateUser = async (name, photo) => {
         if (!currentUser) return;
         const updates = { nome: name, name, photo };
         const updated = { ...currentUser, ...updates };
         saveSession(updated);
-        setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updates } : u));
+        
+        await supabase.from('usuarios').update({ nome: name }).eq('id', currentUser.id);
     };
 
-    const updateCurrentUser = (updates) => {
+    const updateCurrentUser = async (updates) => {
         if (!currentUser) return;
         const updated = { ...currentUser, ...updates };
         saveSession(updated);
-        setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updates } : u));
+
+        await supabase.from('usuarios').update(updates).eq('id', currentUser.id);
     };
 
-    const changeOwnPassword = (newPassword) => {
+    const changeOwnPassword = async (newPassword) => {
         if (!currentUser) return;
-        const updates = { senhaHash: encode(newPassword), senhaTemporaria: false };
+        const updates = { senhahash: encode(newPassword), senhatemporaria: false };
         const updated = { ...currentUser, ...updates };
         saveSession(updated);
-        setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updates } : u));
+
+        await supabase.from('usuarios').update(updates).eq('id', currentUser.id);
     };
 
     // ── Gestão de usuários (admin) ─────────────────────────────
-    const addUser = (userData) => {
+    const addUser = async (userData) => {
         const newUser = {
             id: 'user-' + Date.now(),
             nome: userData.nome,
             matricula: userData.matricula,
             email: userData.email,
-            senhaHash: encode(userData.senha),
+            senhahash: encode(userData.senha),
             cargo: userData.cargo,
             nivel: userData.nivel,
             paineis: userData.nivel === 'admin'
                 ? ALL_PANELS.map(p => p.key)
                 : (userData.paineis || []),
             ativo: true,
-            senhaTemporaria: false,
+            senhatemporaria: false,
         };
+
+        const { error } = await supabase.from('usuarios').insert([newUser]);
+        if (error) {
+            console.error('Erro ao adicionar usuário:', error);
+            throw error;
+        }
+        
         setUsers(prev => [...prev, newUser]);
         return newUser;
     };
 
-    const editUser = (id, updates) => {
-        setUsers(prev => prev.map(u => {
-            if (u.id !== id) return u;
-            const updated = { ...u, ...updates };
-            if (updates.senha) {
-                updated.senhaHash = encode(updates.senha);
-                delete updated.senha;
-            }
-            if (updates.nivel === 'admin') {
-                updated.paineis = ALL_PANELS.map(p => p.key);
-            }
-            return updated;
-        }));
+    const editUser = async (id, updates) => {
+        const dbUpdates = { ...updates };
+        if (updates.senha) {
+            dbUpdates.senhahash = encode(updates.senha);
+            delete dbUpdates.senha;
+        }
+        if (updates.nivel === 'admin') {
+            dbUpdates.paineis = ALL_PANELS.map(p => p.key);
+        }
+
+        const { error } = await supabase.from('usuarios').update(dbUpdates).eq('id', id);
+        if (error) {
+            console.error('Erro ao editar usuário:', error);
+            throw error;
+        }
+
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...dbUpdates } : u));
+
         // Atualiza sessão se for o usuário logado
         if (currentUser?.id === id) {
             setCurrentUser(prev => {
-                const updated = { ...prev, ...updates };
+                const updated = { ...prev, ...dbUpdates };
                 localStorage.setItem('@gestao/session', JSON.stringify(updated));
                 return updated;
             });
         }
     };
 
-    const toggleUserActive = (id) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, ativo: !u.ativo } : u));
+    const resetUserPassword = async (id, novaSenha) => {
+        await editUser(id, { senha: novaSenha, senhatemporaria: true });
     };
 
-    const setTemporaryPassword = (id, tempPassword) => {
-        setUsers(prev => prev.map(u =>
-            u.id === id
-                ? { ...u, senhaHash: encode(tempPassword), senhaTemporaria: true }
-                : u
-        ));
+    const toggleUserStatus = async (id, isActive) => {
+        await editUser(id, { ativo: isActive });
     };
 
-    // ── Controle de acesso ─────────────────────────────────────
-    const hasAccess = (panelKey) => {
-        if (!currentUser) return false;
-        if (currentUser.nivel === 'admin') return true;
-        return Array.isArray(currentUser.paineis) && currentUser.paineis.includes(panelKey);
+    const deleteUser = async (id) => {
+        const { error } = await supabase.from('usuarios').delete().eq('id', id);
+        if (error) {
+            console.error('Erro ao deletar usuário:', error);
+            throw error;
+        }
+        setUsers(prev => prev.filter(u => u.id !== id));
     };
 
-    return (
-        <UserContext.Provider value={{
-            // Sessão / auth (compatibilidade)
-            currentUser,
-            login,
-            logout,
-            updateUser,       // compat com Navbar antigo
-            updateCurrentUser,
-            changeOwnPassword,
-            // Gestão de usuários
-            users,
-            addUser,
-            editUser,
-            toggleUserActive,
-            setTemporaryPassword,
-            // Helpers
-            hasAccess,
-            ALL_PANELS,
-            encode,
-        }}>
-            {children}
-        </UserContext.Provider>
-    );
+    const value = {
+        users,
+        currentUser,
+        loading,
+        login,
+        logout,
+        updateUser,
+        updateCurrentUser,
+        changeOwnPassword,
+        addUser,
+        editUser,
+        resetUserPassword,
+        toggleUserStatus,
+        deleteUser,
+        hasPanelAccess: (panelKey) => currentUser?.nivel === 'admin' || (currentUser?.paineis || []).includes(panelKey)
+    };
+
+    return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
-export const useUsers = () => useContext(UserContext);
-export const useAuth  = () => useContext(UserContext); // compatibilidade total
+export function useAuth() {
+    const context = useContext(UserContext);
+    if (!context) throw new Error('useAuth deve ser usado dentro de UserProvider');
+    return context;
+}

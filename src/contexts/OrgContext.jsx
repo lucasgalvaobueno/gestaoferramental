@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const OrgContext = createContext();
 
@@ -21,149 +22,156 @@ const defaultOrgData = [
         observacao: 'Foco em expansão LATAM',
         avatarUrl: '',
         area: 'Diretoria'
-    },
-    {
-        id: 'dir-1',
-        parentId: 'ceo-1',
-        nome: 'Maria Fernandes',
-        matricula: '10002',
-        turno: 'Administrativo',
-        escala: '5x2',
-        cargo: 'Diretor Comercial',
-        funcao: 'Diretoria Executiva',
-        numeroVaga: '002',
-        isOpen: false,
-        observacao: '',
-        avatarUrl: ''
-    },
-    {
-        id: 'dir-2',
-        parentId: 'ceo-1',
-        nome: 'Carlos Eduardo',
-        matricula: '10003',
-        turno: 'Administrativo',
-        escala: '5x2',
-        cargo: 'Diretor Financeiro',
-        funcao: 'CFO',
-        numeroVaga: '003',
-        isOpen: false,
-        observacao: '',
-        avatarUrl: ''
-    },
-    {
-        id: 'dir-3',
-        parentId: 'ceo-1',
-        nome: 'Ana Costa',
-        matricula: '10004',
-        turno: 'Administrativo',
-        escala: '5x2',
-        cargo: 'Diretor de Produção',
-        funcao: 'COO',
-        numeroVaga: '004',
-        isOpen: false,
-        observacao: '',
-        avatarUrl: ''
-    },
-    {
-        id: 'ger-1',
-        parentId: 'dir-1',
-        nome: '',
-        matricula: '',
-        turno: 'Comercial',
-        escala: '5x2',
-        cargo: 'Gerente de Vendas',
-        funcao: 'Gestão de Key Accounts',
-        numeroVaga: '005',
-        isOpen: true,
-        dataAbertura: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 dias atrás
-        observacao: 'Vaga congelada até o Q3',
-        avatarUrl: '',
-        area: 'Vendas'
     }
 ];
 
 export function OrgProvider({ children }) {
-    const [nodes, setNodes] = useState(() => {
-        const stored = localStorage.getItem('@gestao-ferramental/org_nodes');
-        return stored ? JSON.parse(stored) : defaultOrgData;
-    });
+    const [employees, setEmployees] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchOrg = async () => {
+        const { data, error } = await supabase.from('organograma').select('*');
+        if (error) {
+            console.error('Erro ao buscar organograma:', error);
+            return;
+        }
+
+        if (data.length === 0) {
+            // Seed inicial se vazio
+            setEmployees(defaultOrgData);
+            setLoading(false);
+            
+            // Opcional: Inserir seed no banco
+            const seedRows = defaultOrgData.map(e => ({
+                id: e.id,
+                cargo: e.cargo,
+                departamento: e.area || 'Diretoria',
+                status: e.isOpen ? 'aberta' : 'preenchida',
+                dados: e
+            }));
+            await supabase.from('organograma').insert(seedRows);
+            return;
+        }
+
+        const loaded = data.map(row => ({
+            id: row.id,
+            ...row.dados
+        }));
+
+        setEmployees(loaded);
+        setLoading(false);
+    };
 
     useEffect(() => {
-        localStorage.setItem('@gestao-ferramental/org_nodes', JSON.stringify(nodes));
-    }, [nodes]);
+        fetchOrg();
 
-    const addNode = (parentId) => {
-        const newNode = {
-            id: 'node-' + Date.now().toString(),
-            parentId,
-            nome: 'Novo Colaborador',
-            matricula: '',
-            turno: '',
-            escala: '',
-            cargo: 'Cargo Base',
-            funcao: '',
-            numeroVaga: '',
-            isOpen: false,
-            observacao: '',
-            avatarUrl: '',
-            area: ''
+        const subscription = supabase.channel('org-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'organograma' }, payload => {
+                fetchOrg();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(subscription); };
+    }, []);
+
+    const _updateInDb = async (id, dataObj) => {
+        const dbRow = {
+            cargo: dataObj.cargo || 'Indefinido',
+            departamento: dataObj.area || 'Geral',
+            status: dataObj.isOpen ? 'aberta' : 'preenchida',
+            dados: dataObj
         };
-        setNodes(prev => [...prev, newNode]);
+
+        const { error } = await supabase.from('organograma').update(dbRow).eq('id', id);
+        if (error) {
+            console.error('Erro ao atualizar organograma:', error);
+        }
     };
 
-    const updateNode = (id, updates) => {
-        setNodes(prev => prev.map(n => {
-            if (n.id === id) {
-                let dataAbertura = n.dataAbertura;
-                if (updates.isOpen && !n.isOpen) {
-                    dataAbertura = new Date().toISOString();
-                } else if ('isOpen' in updates && !updates.isOpen) {
-                    dataAbertura = null;
-                }
-                return { ...n, ...updates, dataAbertura };
-            }
-            return n;
+    const addEmployee = async (employeeData) => {
+        const newId = 'emp-' + Date.now().toString();
+        const newEmp = { id: newId, ...employeeData };
+
+        const dbRow = {
+            id: newId,
+            cargo: employeeData.cargo || 'Indefinido',
+            departamento: employeeData.area || 'Geral',
+            status: employeeData.isOpen ? 'aberta' : 'preenchida',
+            dados: newEmp
+        };
+
+        const { error } = await supabase.from('organograma').insert([dbRow]);
+        if (error) {
+            console.error('Erro ao adicionar no organograma:', error);
+            return;
+        }
+
+        setEmployees(prev => [...prev, newEmp]);
+    };
+
+    const updateEmployee = async (id, updates) => {
+        const emp = employees.find(e => e.id === id);
+        if (!emp) return;
+
+        const newEmp = { ...emp, ...updates };
+        await _updateInDb(id, newEmp);
+
+        setEmployees(prev => prev.map(e => e.id === id ? newEmp : e));
+    };
+
+    const deleteEmployee = async (id) => {
+        const { error } = await supabase.from('organograma').delete().eq('id', id);
+        if (error) {
+            console.error('Erro ao deletar do organograma:', error);
+            return;
+        }
+        
+        // Remove also children recursively
+        const childrenToRemove = getDescendantIds(id);
+        if (childrenToRemove.length > 0) {
+            await supabase.from('organograma').delete().in('id', childrenToRemove);
+        }
+
+        setEmployees(prev => prev.filter(e => e.id !== id && !childrenToRemove.includes(e.id)));
+    };
+
+    const getDescendantIds = (parentId) => {
+        const descendants = [];
+        const findChildren = (id) => {
+            const children = employees.filter(e => e.parentId === id);
+            children.forEach(c => {
+                descendants.push(c.id);
+                findChildren(c.id);
+            });
+        };
+        findChildren(parentId);
+        return descendants;
+    };
+
+    const importFromCSV = async (dataArray) => {
+        const rows = dataArray.map(item => ({
+            id: item.id || `emp-${Date.now().toString()}-${Math.random().toString(36).substr(2, 5)}`,
+            cargo: item.cargo || 'Indefinido',
+            departamento: item.area || 'Geral',
+            status: item.isOpen ? 'aberta' : 'preenchida',
+            dados: item
         }));
-    };
 
-    const deleteNode = (id) => {
-        // Find all descendants recursively to delete them or reassign them.
-        // For simplicity, we delete all descendants.
-        const idsToDelete = new Set([id]);
+        await supabase.from('organograma').delete().neq('id', 'dummy'); // delete all
+        await supabase.from('organograma').insert(rows);
         
-        let changed = true;
-        while (changed) {
-            changed = false;
-            for (let n of nodes) {
-                if (idsToDelete.has(n.parentId) && !idsToDelete.has(n.id)) {
-                    idsToDelete.add(n.id);
-                    changed = true;
-                }
-            }
-        }
-        
-        setNodes(prev => prev.filter(n => !idsToDelete.has(n.id)));
-    };
-
-    const moveNode = (draggedId, targetParentId) => {
-        // Prevent cyclic dependencies
-        if (draggedId === targetParentId) return;
-
-        let currentId = targetParentId;
-        while (currentId) {
-            if (currentId === draggedId) {
-                alert("Operação inválida: Você não pode mover um líder para debaixo de seu próprio liderado.");
-                return;
-            }
-            const parent = nodes.find(n => n.id === currentId);
-            currentId = parent ? parent.parentId : null;
-        }
-
-        setNodes(prev => prev.map(n => n.id === draggedId ? { ...n, parentId: targetParentId } : n));
+        setEmployees(rows.map(r => r.dados));
     };
 
     return (
-        <OrgContext.Provider value={{ nodes, addNode, updateNode, deleteNode, moveNode }}>
+        <OrgContext.Provider value={{
+            employees,
+            loading,
+            addEmployee,
+            updateEmployee,
+            deleteEmployee,
+            importFromCSV
+        }}>
             {children}
         </OrgContext.Provider>
     );

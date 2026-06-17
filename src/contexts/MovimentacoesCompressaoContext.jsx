@@ -1,76 +1,132 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './UserContext';
 import { useCompressao } from './CompressaoContext';
+import { supabase } from '../lib/supabase';
 
 const MovimentacoesCompressaoContext = createContext();
 
 export function MovimentacoesCompressaoProvider({ children }) {
     const { currentUser } = useAuth();
-    const { items, updateItem } = useCompressao();
+    const { updateItem } = useCompressao();
     
-    const [movimentacoes, setMovimentacoes] = useState(() => {
-        const stored = localStorage.getItem('@gestao-ferramental/compressao_movimentacoes');
-        return stored ? JSON.parse(stored) : [];
-    });
+    const [movimentacoes, setMovimentacoes] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchMovimentacoes = async () => {
+        const { data, error } = await supabase.from('movimentacoes').select('*').eq('setor', 'compressao');
+        if (error) {
+            console.error('Erro ao buscar movimentações da compressão:', error);
+            return;
+        }
+
+        const loaded = data.map(row => ({
+            id: row.id,
+            itemId: row.item_id,
+            colaboradorId: row.colaborador_id,
+            dataSaida: row.data_saida,
+            dataDevolucao: row.data_devolucao,
+            status: row.status,
+            ...row.dados
+        }));
+
+        loaded.sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida));
+        setMovimentacoes(loaded);
+        setLoading(false);
+    };
 
     useEffect(() => {
-        localStorage.setItem('@gestao-ferramental/compressao_movimentacoes', JSON.stringify(movimentacoes));
-    }, [movimentacoes]);
+        fetchMovimentacoes();
 
-    const addSaida = (dados) => {
-        const novo = {
-            id: 'mov-comp-' + Date.now().toString(),
-            dataSaida: new Date().toISOString(),
-            responsavelSaida: currentUser?.nome || 'Sistema',
+        const subscription = supabase.channel('mov-compressao-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'movimentacoes', filter: "setor=eq.compressao" }, payload => {
+                fetchMovimentacoes();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(subscription); };
+    }, []);
+
+    const addSaida = async (dados) => {
+        const newId = 'mov-' + Date.now().toString();
+        const dataSaida = new Date().toISOString();
+
+        const dbRow = {
+            id: newId,
+            setor: 'compressao',
+            item_id: dados.itemId,
+            colaborador_id: dados.colaboradorId || null,
+            tipo: 'Saída',
+            data_saida: dataSaida,
             status: 'Em Uso',
-            ...dados
+            dados: {
+                responsavelSaida: currentUser?.nome || 'Sistema',
+                ...dados
+            }
         };
+
+        const { error } = await supabase.from('movimentacoes').insert([dbRow]);
+        if (error) {
+            console.error('Erro ao registrar saída:', error);
+            return;
+        }
+
+        const novo = {
+            id: newId,
+            dataSaida,
+            status: 'Em Uso',
+            ...dbRow.dados
+        };
+
         setMovimentacoes(prev => [novo, ...prev]);
     };
 
-    const registrarDevolucao = (idMovimentacao, dadosDevolucao) => {
-        let movimentacaoModificada = null;
+    const registrarDevolucao = async (idMovimentacao, dadosDevolucao) => {
+        const m = movimentacoes.find(x => x.id === idMovimentacao);
+        if (!m) return;
 
-        setMovimentacoes(prev => prev.map(m => {
-            if (m.id !== idMovimentacao) return m;
-            
-            movimentacaoModificada = {
-                ...m,
-                status: 'Devolvido',
-                dataDevolucao: new Date().toISOString(),
-                responsavelRecebimento: currentUser?.nome || 'Sistema',
-                ...dadosDevolucao
-            };
-            return movimentacaoModificada;
-        }));
+        const dataDevolucao = new Date().toISOString();
+        const responsavelRecebimento = currentUser?.nome || 'Sistema';
 
-        if (movimentacaoModificada && movimentacaoModificada.itemId) {
-            const parentItem = items.find(i => i.id === movimentacaoModificada.itemId);
-            
-            if (parentItem) {
-                const updates = {};
-                
-                // Acumula os comprimidos produzidos
-                if (dadosDevolucao.comprimidosProduzidos > 0) {
-                    updates.comprimidosProduzidosTotais = (Number(parentItem.comprimidosProduzidosTotais) || 0) + Number(dadosDevolucao.comprimidosProduzidos);
-                }
+        const updatedDados = {
+            ...m,
+            responsavelRecebimento,
+            ...dadosDevolucao
+        };
 
-                // Se marcou com avaria ou desgaste, avisa o item mãe
-                if (dadosDevolucao.condicao === 'Com avarias' || dadosDevolucao.condicao === 'Desgaste de uso') {
-                    updates.statusDanificado = true;
-                    updates.historicoDanos = `Danificado/Desgastado na devolução em ${new Date().toLocaleDateString()}. Motivo: ${dadosDevolucao.observacoesDevolucao || 'Não informado'}`;
-                }
-                
-                if (Object.keys(updates).length > 0) {
-                    updateItem(parentItem.id, updates);
-                }
-            }
+        const dbRow = {
+            status: 'Devolvido',
+            data_devolucao: dataDevolucao,
+            dados: updatedDados
+        };
+
+        const { error } = await supabase.from('movimentacoes').update(dbRow).eq('id', idMovimentacao);
+        if (error) {
+            console.error('Erro ao registrar devolução:', error);
+            return;
+        }
+
+        const movimentacaoModificada = {
+            ...m,
+            status: 'Devolvido',
+            dataDevolucao,
+            responsavelRecebimento,
+            ...dadosDevolucao
+        };
+
+        setMovimentacoes(prev => prev.map(mov => mov.id === idMovimentacao ? movimentacaoModificada : mov));
+
+        if (dadosDevolucao.condicao === 'Com avarias' && movimentacaoModificada.itemId) {
+            updateItem(movimentacaoModificada.itemId, {
+                statusDanificado: true,
+                historicoDanos: `Danificado na devolução em ${new Date().toLocaleDateString()}. Motivo: ${dadosDevolucao.observacoesDevolucao || 'Não informado'}`
+            });
         }
     };
 
     return (
         <MovimentacoesCompressaoContext.Provider value={{
             movimentacoes,
+            loading,
             addSaida,
             registrarDevolucao
         }}>
