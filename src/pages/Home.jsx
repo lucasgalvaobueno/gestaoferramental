@@ -15,14 +15,14 @@ const PANELS = [
 ];
 
 export default function Home() {
-    const { hasAccess, currentUser } = useUsers();
+    const { hasPanelAccess, currentUser } = useUsers();
     const isAdmin = currentUser?.nivel === 'admin';
     const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosEmbalagem, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
 
     const renderPanels = () => (
         <div className="dashboard-grid">
             {PANELS.map(({ key, label, icon: Icon, to }) => {
-                const allowed = hasAccess(key);
+                const allowed = hasPanelAccess(key);
 
                 if (allowed && to) {
                     return (
