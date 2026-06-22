@@ -22,7 +22,7 @@ export function AssetProvider({ children }) {
         const loadedLogs = [];
         
         for (const row of data) {
-            loadedAssets.push({ id: row.id, status: row.status, nome: row.nome, ...row.dados });
+            loadedAssets.push({ id: row.id, ...row.dados });
             if (row.dados && row.dados.logs) {
                 loadedLogs.push(...row.dados.logs);
             }
@@ -59,9 +59,7 @@ export function AssetProvider({ children }) {
         const dbRow = {
             id: newId,
             tipo: 'ativo',
-            nome: assetData.nome || 'Ativo sem nome',
-            status: 'ativo',
-            dados: { ...assetData, logs: [actionLog] }
+            dados: { ...assetData, status: 'ativo', logs: [actionLog] }
         };
 
         const { error } = await supabase.from('ativos').insert([dbRow]);
@@ -75,11 +73,9 @@ export function AssetProvider({ children }) {
     };
 
     const _updateInDb = async (id, newAsset, newLogsList) => {
-        const { id: _id, status, nome, ...restData } = newAsset;
+        const { id: _id, ...restData } = newAsset;
         const dbRow = {
-            nome: nome || 'Ativo sem nome',
-            status: status,
-            dados: { ...restData, nome, logs: newLogsList }
+            dados: { ...restData, logs: newLogsList }
         };
         await supabase.from('ativos').update(dbRow).eq('id', id);
     };

@@ -72,10 +72,13 @@ export function useNotifications() {
             return false;
         }) : [];
 
+        // 7.1 Itens Danificados na Compressão
+        const itensDanificadosCompressao = isAdmin ? compressaoItems.filter(i => i.statusDanificado && i.status !== 'Obsoleto') : [];
+
         // 8. Itens Danificados na Embalagem
         const itensDanificadosEmbalagem = isAdmin ? embalagemItems.filter(i => i.statusDanificado && i.status !== 'Obsoleto') : [];
 
-        const totalNotificacoes = ativosPendentes.length + rcsAtrasadas.length + vagasAbertas.length + tarefasAtrasadasOuProximas.length + novasTarefasAtribuidas.length + itensDanificadosManipulacao.length + conjuntosCompressaoNoLimite.length + itensDanificadosEmbalagem.length;
+        const totalNotificacoes = ativosPendentes.length + rcsAtrasadas.length + vagasAbertas.length + tarefasAtrasadasOuProximas.length + novasTarefasAtribuidas.length + itensDanificadosManipulacao.length + conjuntosCompressaoNoLimite.length + itensDanificadosCompressao.length + itensDanificadosEmbalagem.length;
 
         return {
             ativosPendentes,
@@ -84,6 +87,7 @@ export function useNotifications() {
             tarefasAtrasadasOuProximas,
             novasTarefasAtribuidas,
             itensDanificadosManipulacao,
+            itensDanificadosCompressao,
             itensDanificadosEmbalagem,
             conjuntosCompressaoNoLimite,
             totalNotificacoes,

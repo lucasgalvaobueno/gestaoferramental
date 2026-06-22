@@ -115,11 +115,32 @@ export function MovimentacoesCompressaoProvider({ children }) {
 
         setMovimentacoes(prev => prev.map(mov => mov.id === idMovimentacao ? movimentacaoModificada : mov));
 
-        if (dadosDevolucao.condicao === 'Com avarias' && movimentacaoModificada.itemId) {
-            updateItem(movimentacaoModificada.itemId, {
-                statusDanificado: true,
-                historicoDanos: `Danificado na devolução em ${new Date().toLocaleDateString()}. Motivo: ${dadosDevolucao.observacoesDevolucao || 'Não informado'}`
-            });
+        if (dadosDevolucao.condicao === 'Com avarias' || (dadosDevolucao.comprimidosProduzidos && dadosDevolucao.comprimidosProduzidos > 0)) {
+            if (movimentacaoModificada.itemId) {
+                const updateData = {};
+                
+                // Se produziu comprimidos, buscar o item para somar o valor
+                if (dadosDevolucao.comprimidosProduzidos && dadosDevolucao.comprimidosProduzidos > 0) {
+                    // Como não temos acesso síncrono aos itens completos aqui de forma fácil,
+                    // precisamos chamar updateItem. O updateItem vai usar um merge.
+                    // Para somar de forma segura, deveríamos idealmente buscar do DB.
+                    // Mas como o app confia na interface que mandou os dados, vamos buscar do Supabase a qtd atual
+                    const { data: itemBanco } = await supabase.from('itens').select('dados').eq('id', movimentacaoModificada.itemId).single();
+                    if (itemBanco) {
+                        const qtdAtual = Number(itemBanco.dados?.comprimidosProduzidosTotais) || 0;
+                        updateData.comprimidosProduzidosTotais = qtdAtual + Number(dadosDevolucao.comprimidosProduzidos);
+                    }
+                }
+
+                if (dadosDevolucao.condicao === 'Com avarias') {
+                    updateData.statusDanificado = true;
+                    updateData.historicoDanos = `Danificado na devolução em ${new Date().toLocaleDateString()}. Motivo: ${dadosDevolucao.observacoesDevolucao || 'Não informado'}`;
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    updateItem(movimentacaoModificada.itemId, updateData);
+                }
+            }
         }
     };
 

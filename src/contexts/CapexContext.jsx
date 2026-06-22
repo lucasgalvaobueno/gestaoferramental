@@ -20,7 +20,6 @@ export function CapexProvider({ children }) {
         
         const loaded = data.map(row => ({
             id: row.id,
-            status: row.status,
             ...row.dados
         }));
         
@@ -43,13 +42,12 @@ export function CapexProvider({ children }) {
     const addCapexItem = async (item) => {
         const newId = Date.now().toString();
         const status = item.status || 'aprovado';
+        const newItemData = { ...item, status };
         
         const dbRow = {
             id: newId,
             tipo: 'capex',
-            nome: item.numero || item.descricao || 'Capex',
-            status: status,
-            dados: item
+            dados: newItemData
         };
 
         const { error } = await supabase.from('ativos').insert([dbRow]);
@@ -58,7 +56,7 @@ export function CapexProvider({ children }) {
             return;
         }
 
-        const newItem = { id: newId, status, ...item };
+        const newItem = { id: newId, ...newItemData };
         setCapexItems(prev => [newItem, ...prev]);
     };
 
@@ -67,11 +65,9 @@ export function CapexProvider({ children }) {
         if (!item) return;
 
         const newItem = { ...item, ...updates };
-        const { id: _id, status, ...restData } = newItem;
+        const { id: _id, ...restData } = newItem;
         
         const dbRow = {
-            nome: newItem.numero || newItem.descricao || 'Capex',
-            status: newItem.status,
             dados: restData
         };
 

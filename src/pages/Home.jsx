@@ -17,7 +17,7 @@ const PANELS = [
 export default function Home() {
     const { hasPanelAccess, currentUser } = useUsers();
     const isAdmin = currentUser?.nivel === 'admin';
-    const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosEmbalagem, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
+    const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosCompressao, itensDanificadosEmbalagem, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
 
     const renderPanels = () => (
         <div className="dashboard-grid">
@@ -151,6 +151,21 @@ export default function Home() {
                                                     {itensDanificadosManipulacao.length > 5 && <li>E mais {itensDanificadosManipulacao.length - 5}...</li>}
                                                 </ul>
                                                 <Link to="/manipulacao">Verificar em Manipulação</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {itensDanificadosCompressao?.length > 0 && (
+                                        <div className="notification-item" style={{ padding: '0.5rem 0' }}>
+                                            <div className="notification-icon" style={{ background: '#FEF2F2', color: 'var(--danger-color)' }}><AlertTriangle size={16} /></div>
+                                            <div className="notification-content">
+                                                <strong>{itensDanificadosCompressao.length} {itensDanificadosCompressao.length === 1 ? 'Item danificado na Compressão' : 'Itens danificados na Compressão'}</strong>
+                                                <ul style={{ margin: '0.25rem 0 0', paddingLeft: '1.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                    {itensDanificadosCompressao.slice(0, 5).map(i => (
+                                                        <li key={i.id}>{i.numIdentificacao || i.numFormato}</li>
+                                                    ))}
+                                                    {itensDanificadosCompressao.length > 5 && <li>E mais {itensDanificadosCompressao.length - 5}...</li>}
+                                                </ul>
+                                                <Link to="/compressao">Verificar em Compressão</Link>
                                             </div>
                                         </div>
                                     )}
