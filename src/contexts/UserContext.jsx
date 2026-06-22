@@ -62,26 +62,41 @@ export function UserProvider({ children }) {
 
     // ── Autenticação ───────────────────────────────────────────
     const login = async (email, senha) => {
-        const { data, error } = await supabase.from('usuarios')
-            .select('*')
-            .ilike('email', email.trim())
-            .single();
+        try {
+            console.log("Tentando login com:", email);
+            const { data, error } = await supabase.from('usuarios')
+                .select('*')
+                .ilike('email', email.trim())
+                .single();
 
-        if (error || !data) {
+            if (error) {
+                console.error("Erro Supabase na busca do usuário:", error);
+                alert("Erro de conexão com o banco de dados: " + error.message);
+                return { success: false, reason: 'invalid' };
+            }
+            
+            if (!data) {
+                console.warn("Usuário não encontrado.");
+                return { success: false, reason: 'invalid' };
+            }
+
+            if (!data.ativo) {
+                return { success: false, reason: 'inactive' };
+            }
+
+            if (data.senhahash !== encode(senha)) {
+                console.warn("Senha não bate. Banco:", data.senhahash, "Digitado:", encode(senha));
+                return { success: false, reason: 'invalid' };
+            }
+
+            saveSession(data);
+            if (data.senhatemporaria) return { success: true, redirect: '/alterar-senha' };
+            return { success: true, redirect: '/home' };
+        } catch (err) {
+            console.error("Erro inesperado no login:", err);
+            alert("Erro inesperado: " + err.message);
             return { success: false, reason: 'invalid' };
         }
-
-        if (!data.ativo) {
-            return { success: false, reason: 'inactive' };
-        }
-
-        if (data.senhahash !== encode(senha)) {
-            return { success: false, reason: 'invalid' };
-        }
-
-        saveSession(data);
-        if (data.senhatemporaria) return { success: true, redirect: '/alterar-senha' };
-        return { success: true, redirect: '/home' };
     };
 
     const logout = () => clearSession();
