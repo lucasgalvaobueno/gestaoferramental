@@ -12,7 +12,7 @@ export function useNotifications() {
     const { currentUser } = useAuth();
     const { getAssetsByStatus } = useAssets();
     const { requisitions } = useFollowUp();
-    const { nodes } = useOrg();
+    const { employees: nodes } = useOrg();
     const { tasks, updateTask } = useTasks();
     const { items: manipulacaoItems } = useManipulacao();
     const { items: compressaoItems } = useCompressao();
