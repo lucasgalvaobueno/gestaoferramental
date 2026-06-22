@@ -12,16 +12,21 @@ export default function Login() {
     const { login } = useAuth();
     const navigate  = useNavigate();
 
-    const handleSubmit = e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const result = login(email, password);
-        if (result.success) {
-            navigate(result.redirect);
-        } else {
-            setError(result.reason === 'inactive'
-                ? 'Usuário inativo. Contate o administrador.'
-                : 'E-mail ou senha inválidos.');
+        
+        try {
+            const result = await login(email, password);
+            if (result.success) {
+                navigate(result.redirect);
+            } else {
+                setError(result.reason === 'inactive'
+                    ? 'Usuário inativo. Contate o administrador.'
+                    : 'E-mail ou senha inválidos.');
+            }
+        } catch (err) {
+            setError('Erro de conexão. Tente novamente.');
         }
     };
 
