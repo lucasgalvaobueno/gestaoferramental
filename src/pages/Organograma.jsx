@@ -94,7 +94,7 @@ const OrgNode = ({ node, childrenNodes, onEdit, onAddChild, onView }) => {
 
 /* ─── Página principal ────────────────────────────────────── */
 export default function Organograma() {
-    const { nodes, addNode, updateNode, deleteNode, moveNode } = useOrg();
+    const { employees: nodes, addEmployee: addNode, updateEmployee: updateNode, deleteEmployee: deleteNode } = useOrg();
 
     const [editingNode, setEditingNode] = useState(null);
     const [viewingNode, setViewingNode] = useState(null);
@@ -236,7 +236,7 @@ export default function Organograma() {
     const handleSaveEdit = () => {
         if (!formData?.id) return;
         if (formData.parentId !== editingNode.parentId) {
-            moveNode(formData.id, formData.parentId);
+            updateNode(formData.id, { parentId: formData.parentId });
         }
         updateNode(formData.id, {
             ...formData,
