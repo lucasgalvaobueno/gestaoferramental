@@ -23,6 +23,7 @@ export default function CadastroProdutosEspessura() {
     const [codigoPA, setCodigoPA] = useState('');
     const [produtoPI, setProdutoPI] = useState('');
     const [produtoPA, setProdutoPA] = useState('');
+    const [isComprimido, setIsComprimido] = useState(false);
     const [espessuraMin, setEspessuraMin] = useState('');
     const [espessuraMax, setEspessuraMax] = useState('');
     const [showExcelInfo, setShowExcelInfo] = useState(false);
@@ -40,15 +41,20 @@ export default function CadastroProdutosEspessura() {
             return;
         }
 
-        const min = parseFloat(espessuraMin.replace(',', '.'));
-        const max = parseFloat(espessuraMax.replace(',', '.'));
-        if (isNaN(min) || isNaN(max)) {
-            showError('Espessuras devem ser números válidos.');
-            return;
-        }
-        if (max <= min) {
-            showError('A espessura máxima deve ser obrigatoriamente maior que a mínima.');
-            return;
+        let min = null;
+        let max = null;
+
+        if (isComprimido) {
+            min = parseFloat(espessuraMin.replace(',', '.'));
+            max = parseFloat(espessuraMax.replace(',', '.'));
+            if (isNaN(min) || isNaN(max)) {
+                showError('Espessuras devem ser números válidos.');
+                return;
+            }
+            if (max <= min) {
+                showError('A espessura máxima deve ser obrigatoriamente maior que a mínima.');
+                return;
+            }
         }
 
         addProduto({
@@ -56,13 +62,14 @@ export default function CadastroProdutosEspessura() {
             codigoPA,
             produtoPI,
             produtoPA,
+            isComprimido,
             espessuraMin: min,
             espessuraMax: max,
-            espessuraMedia: (min + max) / 2
+            espessuraMedia: (min !== null && max !== null) ? (min + max) / 2 : null
         });
 
         setCodigoPI(''); setCodigoPA(''); setProdutoPI(''); setProdutoPA('');
-        setEspessuraMin(''); setEspessuraMax('');
+        setIsComprimido(false); setEspessuraMin(''); setEspessuraMax('');
         showSuccess('Produto cadastrado com sucesso!');
     };
 
@@ -87,19 +94,33 @@ export default function CadastroProdutosEspessura() {
                     const prodPA = row[keys[3]];
                     const minStr = row[keys[4]]?.toString().replace(',', '.');
                     const maxStr = row[keys[5]]?.toString().replace(',', '.');
-                    const min = parseFloat(minStr);
-                    const max = parseFloat(maxStr);
+                    
+                    let min = null;
+                    let max = null;
+                    let isComprimido = false;
 
-                    if (!pi || !pa || isNaN(min) || isNaN(max) || max <= min) return null;
+                    if (minStr && maxStr) {
+                        const parsedMin = parseFloat(minStr);
+                        const parsedMax = parseFloat(maxStr);
+                        if (!isNaN(parsedMin) && !isNaN(parsedMax)) {
+                            min = parsedMin;
+                            max = parsedMax;
+                            isComprimido = true;
+                        }
+                    }
+
+                    if (!pi || !pa) return null;
+                    if (isComprimido && max <= min) return null;
 
                     return {
                         codigoPI: pi,
                         codigoPA: pa,
                         produtoPI: prodPI || '',
                         produtoPA: prodPA || '',
+                        isComprimido,
                         espessuraMin: min,
                         espessuraMax: max,
-                        espessuraMedia: (min + max) / 2
+                        espessuraMedia: isComprimido ? (min + max) / 2 : null
                     };
                 }).filter(p => p !== null);
 
@@ -107,7 +128,7 @@ export default function CadastroProdutosEspessura() {
                     addProdutosEmMassa(novos);
                     showSuccess(`${novos.length} produtos importados!`);
                 } else {
-                    showError('Nenhum dado válido. Verifique a ordem e garanta que Máxima > Mínima.');
+                    showError('Nenhum dado válido. Verifique se Produto PI e PA estão preenchidos.');
                 }
             } catch (err) {
                 showError('Erro ao ler a planilha.');
@@ -130,7 +151,7 @@ export default function CadastroProdutosEspessura() {
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
-            <Navbar breadcrumbs={[{ label: 'Painéis de acesso', to: '/home' }, { label: 'Gestão Ferramental', to: '/gestao-ferramental' }, { label: 'Cadastros de Espessuras' }]} />
+            <Navbar breadcrumbs={[{ label: 'Painéis de acesso', to: '/home' }, { label: 'Gestão Ferramental', to: '/gestao-ferramental' }, { label: 'Cadastro de produtos' }]} />
             
             <div className="container mx-auto p-4 flex-1 flex flex-col" style={{ maxWidth: '1400px' }}>
                 <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -139,7 +160,7 @@ export default function CadastroProdutosEspessura() {
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="m-0 text-primary">Cadastro de Produtos (Espessuras)</h2>
+                    <h2 className="m-0 text-primary">Cadastro de produtos</h2>
                 </div>
 
                 <div className="animate-fade-in flex gap-4 flex-1" style={{ height: 'calc(100vh - 150px)', overflow: 'hidden' }}>
@@ -199,14 +220,21 @@ export default function CadastroProdutosEspessura() {
                                 <div className="form-group flex-1 m-0"><label>Produto PA</label><input type="text" className="form-control" required value={produtoPA} onChange={e => setProdutoPA(e.target.value)} /></div>
                             </div>
                             
-                            <div className="flex gap-4 mb-6">
-                                <div className="form-group flex-1 m-0"><label>Espessura Mínima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMin} onChange={e => setEspessuraMin(e.target.value)} /></div>
-                                <div className="form-group flex-1 m-0"><label>Espessura Máxima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMax} onChange={e => setEspessuraMax(e.target.value)} /></div>
-                                <div className="form-group flex-1 m-0">
-                                    <label>Média (Auto)</label>
-                                    <input type="text" className="form-control" disabled style={{ backgroundColor: '#f1f5f9' }} value={(!isNaN(parseFloat(espessuraMin.replace(',', '.'))) && !isNaN(parseFloat(espessuraMax.replace(',', '.')))) ? ((parseFloat(espessuraMin.replace(',', '.')) + parseFloat(espessuraMax.replace(',', '.'))) / 2).toFixed(2) : ''} />
-                                </div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <input type="checkbox" id="isComprimido" checked={isComprimido} onChange={e => setIsComprimido(e.target.checked)} style={{ width: 'auto', margin: 0, cursor: 'pointer' }} />
+                                <label htmlFor="isComprimido" style={{ margin: 0, fontWeight: 600, cursor: 'pointer' }}>Comprimido</label>
                             </div>
+                            
+                            {isComprimido && (
+                                <div className="flex gap-4 mb-6 animate-fade-in">
+                                    <div className="form-group flex-1 m-0"><label>Espessura Mínima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMin} onChange={e => setEspessuraMin(e.target.value)} /></div>
+                                    <div className="form-group flex-1 m-0"><label>Espessura Máxima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMax} onChange={e => setEspessuraMax(e.target.value)} /></div>
+                                    <div className="form-group flex-1 m-0">
+                                        <label>Média (Auto)</label>
+                                        <input type="text" className="form-control" disabled style={{ backgroundColor: '#f1f5f9' }} value={(!isNaN(parseFloat(espessuraMin.replace(',', '.'))) && !isNaN(parseFloat(espessuraMax.replace(',', '.')))) ? ((parseFloat(espessuraMin.replace(',', '.')) + parseFloat(espessuraMax.replace(',', '.'))) / 2).toFixed(2) : ''} />
+                                    </div>
+                                </div>
+                            )}
                             
                             <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2 py-3"><Save size={18} /> Cadastrar Manualmente</button>
                         </form>
@@ -218,7 +246,7 @@ export default function CadastroProdutosEspessura() {
                             </div>
                             {showExcelInfo && (
                                 <div style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                                    A planilha deve conter as colunas nesta ordem (sem cabeçalho ou pulando-o): <strong>Código PI, Código PA, Produto PI, Produto PA, Espessura Mín., Espessura Máx.</strong>
+                                    A planilha deve conter as colunas nesta ordem (sem cabeçalho ou pulando-o): <strong>Código PI, Código PA, Produto PI, Produto PA, Espessura Mín. (opcional), Espessura Máx. (opcional)</strong>. <br/>Se as informações de espessura não forem preenchidas, será subentendido que não se trata de um comprimido.
                                 </div>
                             )}
                             <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
