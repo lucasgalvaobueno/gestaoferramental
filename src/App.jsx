@@ -35,6 +35,7 @@ import Embalagem        from './pages/Embalagem';
 import EmbalagemBPF550  from './pages/EmbalagemBPF550';
 import Usuarios     from './pages/Usuarios';
 import AlterarSenha from './pages/AlterarSenha';
+import CadastroProdutosEspessura from './pages/CadastroProdutosEspessura';
 
 function PrivateRoute({ children }) {
     const { currentUser } = useAuth();
@@ -86,6 +87,7 @@ export default function App() {
                                             <Route path="/cadastros-manipulacao" element={<PrivateRoute><CadastrosManipulacao /></PrivateRoute>} />
                                             <Route path="/cadastros-compressao" element={<PrivateRoute><CadastrosCompressao /></PrivateRoute>} />
                                             <Route path="/cadastros-embalagem" element={<PrivateRoute><CadastrosEmbalagem /></PrivateRoute>} />
+                                            <Route path="/cadastros-espessura" element={<PrivateRoute><CadastroProdutosEspessura /></PrivateRoute>} />
                                             <Route path="/gestao-espessuras" element={<PrivateRoute><GestaoEspessuras /></PrivateRoute>} />
                                             <Route path="/manipulacao"    element={<PrivateRoute><Manipulacao /></PrivateRoute>} />
                                             <Route path="/compressao"     element={<PrivateRoute><Compressao /></PrivateRoute>} />

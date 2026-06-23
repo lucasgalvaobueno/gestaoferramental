@@ -49,6 +49,10 @@ export default function GestaoFerramental() {
                         <FilePlus2 size={48} className="text-primary mb-2" />
                         <h3>Cadastros Embalagem</h3>
                     </Link>
+                    <Link to="/cadastros-espessura" className="dashboard-card">
+                        <FilePlus2 size={48} className="text-primary mb-2" />
+                        <h3>Cadastros Espessura</h3>
+                    </Link>
                     <div className="dashboard-card" onClick={() => alert('Em construção')}>
                         <FilePlus2 size={48} className="text-primary mb-2" />
                         <h3>Cadastros Não Sólidos</h3>
