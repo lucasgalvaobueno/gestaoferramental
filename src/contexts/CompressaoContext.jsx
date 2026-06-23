@@ -186,12 +186,23 @@ export function CompressaoProvider({ children }) {
         return logs.filter(log => log.itemId === itemId).sort((a, b) => new Date(b.date) - new Date(a.date));
     };
 
+    const deleteItem = async (id) => {
+        const { error } = await supabase.from('itens').delete().eq('id', id);
+        if (error) {
+            console.error('Erro ao excluir item de compressão:', error);
+            return;
+        }
+        setItems(prev => prev.filter(i => i.id !== id));
+        setLogs(prev => prev.filter(l => l.itemId !== id));
+    };
+
     return (
         <CompressaoContext.Provider value={{
             items,
             loading,
             addItem,
             updateItem,
+            deleteItem,
             itemParaObsoleto,
             getLogsForItem
         }}>
