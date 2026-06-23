@@ -29,9 +29,7 @@ export default function CadastroProdutosEspessura() {
     const [showExcelInfo, setShowExcelInfo] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Lista de Cadastro (Lateral)
-    const [showCadastroList, setShowCadastroList] = useState(true);
-    const [cadastroSearch, setCadastroSearch] = useState('');
+    // Lista de Cadastro removida para a página ListaProdutosEspessura.jsx
 
     const handleCadastroSubmit = (e) => {
         e.preventDefault();
@@ -138,16 +136,7 @@ export default function CadastroProdutosEspessura() {
         reader.readAsBinaryString(file);
     };
 
-    const filteredProdutos = useMemo(() => {
-        const q = cadastroSearch.toLowerCase();
-        if (!q) return produtos;
-        return produtos.filter(p => 
-            p.codigoPI.toLowerCase().includes(q) ||
-            p.codigoPA.toLowerCase().includes(q) ||
-            p.produtoPI.toLowerCase().includes(q) ||
-            p.produtoPA.toLowerCase().includes(q)
-        );
-    }, [produtos, cadastroSearch]);
+    // Filtro e Lista movidos para ListaProdutosEspessura.jsx
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
@@ -161,51 +150,13 @@ export default function CadastroProdutosEspessura() {
 
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="m-0 text-primary">Cadastro de produtos</h2>
+                    <Link to="/lista-produtos-espessura" className="btn btn-primary flex items-center gap-2">
+                        Visualizar produtos cadastrados
+                    </Link>
                 </div>
 
                 <div className="animate-fade-in flex gap-4 flex-1" style={{ height: 'calc(100vh - 150px)', overflow: 'hidden' }}>
-                    {/* Lista Lateral Ocultável */}
-                    <div className="shadow-sm" style={{ 
-                        width: showCadastroList ? '350px' : '40px', 
-                        transition: 'width 0.3s', 
-                        backgroundColor: '#fff', 
-                        border: '1px solid var(--border-color)', 
-                        display: 'flex', flexDirection: 'column', 
-                        position: 'relative',
-                        borderRadius: '8px'
-                    }}>
-                        <button onClick={() => setShowCadastroList(!showCadastroList)} style={{ position: 'absolute', top: '10px', right: '-15px', zIndex: 10, background: '#fff', border: '1px solid var(--border-color)', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                            {showCadastroList ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                        </button>
-                        
-                        {showCadastroList && (
-                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                                    <h4 style={{ margin: '0 0 1rem 0' }}>Itens Cadastrados</h4>
-                                    <div style={{ position: 'relative' }}>
-                                        <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                        <input type="text" className="form-control" placeholder="Buscar PI, PA ou Nome..." style={{ paddingLeft: '32px', margin: 0 }} value={cadastroSearch} onChange={e => setCadastroSearch(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: '1rem' }}>
-                                    {filteredProdutos.length === 0 ? (
-                                        <p className="text-secondary text-center p-4">Nenhum encontrado.</p>
-                                    ) : (
-                                        filteredProdutos.map(p => (
-                                            <div key={p.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 600 }}>{p.codigoPI}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.produtoPI}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>{p.espessuraMin} - {p.espessuraMax}</div>
-                                                </div>
-                                                <button className="btn btn-icon text-danger" onClick={() => deleteProduto(p.id)}><Trash2 size={16} /></button>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {/* A Lista Lateral foi movida para a nova página */}
 
                     {/* Área Principal (Formulário e Importação lado a lado) */}
                     <div className="flex flex-1 gap-6" style={{ overflowY: 'auto', paddingRight: '0.5rem', paddingBottom: '1rem' }}>
