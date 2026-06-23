@@ -20,13 +20,13 @@ export function MovimentacoesManipulacaoProvider({ children }) {
         }
 
         const loaded = data.map(row => ({
+            ...row.dados,
             id: row.id,
             itemId: row.item_id,
             colaboradorId: row.colaborador_id,
             dataSaida: row.data_saida,
             dataDevolucao: row.data_devolucao,
-            status: row.status,
-            ...row.dados
+            status: row.status
         }));
 
         loaded.sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida));
