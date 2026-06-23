@@ -290,7 +290,7 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                         <label>Número de Identificação do Conjunto / Formato</label>
                         <input type="text" className="form-control" required value={numSearch} onChange={e => handleNumSearchChange(e.target.value)} list="num-list" placeholder="Digite para buscar..." />
                         <datalist id="num-list">
-                            {itensCadastradosAtivos.map(i => <option key={i.id} value={i.numIdentificacao || i.numFormato} />)}
+                            {itensCadastradosAtivos.filter(i => !i.statusDanificado).map(i => <option key={i.id} value={i.numIdentificacao || i.numFormato} />)}
                         </datalist>
                         {numSearch && !selectedItem && <small className="text-danger mt-1 block">Item não encontrado ou obsoleto.</small>}
                         {selectedItem && selectedItem.statusDanificado && <small className="text-danger mt-1 block font-bold">Este item está danificado e não pode ser utilizado.</small>}

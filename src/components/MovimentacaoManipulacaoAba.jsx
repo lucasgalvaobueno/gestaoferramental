@@ -215,7 +215,7 @@ export default function MovimentacaoManipulacaoAba({ categorias, titulo }) {
                         <label>Buscar TAG (Digite para auto-completar)</label>
                         <input type="text" className="form-control" value={tagSearch} onChange={e => handleTagSearchChange(e.target.value)} list="tags-list" placeholder="Ex: MAL-01" required />
                         <datalist id="tags-list">
-                            {itensCadastradosAtivos.map(i => <option key={i.id} value={i.tag} />)}
+                            {itensCadastradosAtivos.filter(i => !i.statusDanificado).map(i => <option key={i.id} value={i.tag} />)}
                         </datalist>
                         {selectedItem && selectedItem.statusDanificado && (
                             <div className="text-danger text-sm mt-1 flex items-center gap-1"><AlertTriangle size={14}/> Este item está marcado como danificado e não pode ser utilizado.</div>
