@@ -51,7 +51,7 @@ export default function GestaoFerramental() {
                     </Link>
                     <Link to="/cadastros-espessura" className="dashboard-card">
                         <FilePlus2 size={48} className="text-primary mb-2" />
-                        <h3>Cadastros Espessura</h3>
+                        <h3>Cadastro de produtos</h3>
                     </Link>
                     <div className="dashboard-card" onClick={() => alert('Em construção')}>
                         <FilePlus2 size={48} className="text-primary mb-2" />

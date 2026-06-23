@@ -153,7 +153,7 @@ export default function CadastroProdutosEspessura() {
         <div className="flex flex-col h-screen bg-gray-50">
             <Navbar breadcrumbs={[{ label: 'Painéis de acesso', to: '/home' }, { label: 'Gestão Ferramental', to: '/gestao-ferramental' }, { label: 'Cadastro de produtos' }]} />
             
-            <div className="container mx-auto p-4 flex-1 flex flex-col" style={{ maxWidth: '1400px' }}>
+            <div className="container mx-auto p-4 flex-1 flex flex-col" style={{ maxWidth: '100%' }}>
                 <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {successMessage && <div className="alert flex items-center gap-2" style={{ backgroundColor: 'var(--success-color)', color: '#fff', padding: '1rem', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}><CheckCircle2 size={18}/> {successMessage}</div>}
                     {errorMessage && <div className="alert flex items-center gap-2" style={{ backgroundColor: 'var(--danger-color)', color: '#fff', padding: '1rem', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}><AlertCircle size={18}/> {errorMessage}</div>}
@@ -207,48 +207,57 @@ export default function CadastroProdutosEspessura() {
                         )}
                     </div>
 
-                    {/* Formulário Principal */}
-                    <div className="card p-6 shadow-sm flex-1" style={{ overflowY: 'auto' }}>
-                        <h3 className="mb-4 text-primary" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Novo Produto</h3>
-                        <form onSubmit={handleCadastroSubmit}>
-                            <div className="flex gap-4 mb-4">
-                                <div className="form-group flex-1 m-0"><label>Código PI (Apenas Números)</label><input type="text" className="form-control" required value={codigoPI} onChange={e => setCodigoPI(e.target.value)} /></div>
-                                <div className="form-group flex-1 m-0"><label>Código PA (Apenas Números)</label><input type="text" className="form-control" required value={codigoPA} onChange={e => setCodigoPA(e.target.value)} /></div>
-                            </div>
-                            <div className="flex gap-4 mb-4">
-                                <div className="form-group flex-1 m-0"><label>Produto PI</label><input type="text" className="form-control" required value={produtoPI} onChange={e => setProdutoPI(e.target.value)} /></div>
-                                <div className="form-group flex-1 m-0"><label>Produto PA</label><input type="text" className="form-control" required value={produtoPA} onChange={e => setProdutoPA(e.target.value)} /></div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 mb-4">
-                                <input type="checkbox" id="isComprimido" checked={isComprimido} onChange={e => setIsComprimido(e.target.checked)} style={{ width: 'auto', margin: 0, cursor: 'pointer' }} />
-                                <label htmlFor="isComprimido" style={{ margin: 0, fontWeight: 600, cursor: 'pointer' }}>Comprimido</label>
-                            </div>
-                            
-                            {isComprimido && (
-                                <div className="flex gap-4 mb-6 animate-fade-in">
-                                    <div className="form-group flex-1 m-0"><label>Espessura Mínima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMin} onChange={e => setEspessuraMin(e.target.value)} /></div>
-                                    <div className="form-group flex-1 m-0"><label>Espessura Máxima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMax} onChange={e => setEspessuraMax(e.target.value)} /></div>
-                                    <div className="form-group flex-1 m-0">
-                                        <label>Média (Auto)</label>
-                                        <input type="text" className="form-control" disabled style={{ backgroundColor: '#f1f5f9' }} value={(!isNaN(parseFloat(espessuraMin.replace(',', '.'))) && !isNaN(parseFloat(espessuraMax.replace(',', '.')))) ? ((parseFloat(espessuraMin.replace(',', '.')) + parseFloat(espessuraMax.replace(',', '.'))) / 2).toFixed(2) : ''} />
-                                    </div>
+                    {/* Área Principal (Formulário e Importação lado a lado) */}
+                    <div className="flex flex-1 gap-6" style={{ overflowY: 'auto', paddingRight: '0.5rem', paddingBottom: '1rem' }}>
+                        
+                        {/* Coluna 1: Formulário de Novo Produto */}
+                        <div className="card p-6 shadow-sm flex-1 h-fit" style={{ minWidth: '400px' }}>
+                            <h3 className="mb-4 text-primary" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Novo Produto</h3>
+                            <form onSubmit={handleCadastroSubmit}>
+                                <div className="flex gap-4 mb-4">
+                                    <div className="form-group flex-1 m-0"><label>Código PI (Apenas Números)</label><input type="text" className="form-control" required value={codigoPI} onChange={e => setCodigoPI(e.target.value)} /></div>
+                                    <div className="form-group flex-1 m-0"><label>Código PA (Apenas Números)</label><input type="text" className="form-control" required value={codigoPA} onChange={e => setCodigoPA(e.target.value)} /></div>
                                 </div>
-                            )}
-                            
-                            <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2 py-3"><Save size={18} /> Cadastrar Manualmente</button>
-                        </form>
+                                <div className="flex gap-4 mb-4">
+                                    <div className="form-group flex-1 m-0"><label>Produto PI</label><input type="text" className="form-control" required value={produtoPI} onChange={e => setProdutoPI(e.target.value)} /></div>
+                                    <div className="form-group flex-1 m-0"><label>Produto PA</label><input type="text" className="form-control" required value={produtoPA} onChange={e => setProdutoPA(e.target.value)} /></div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 mb-4">
+                                    <input type="checkbox" id="isComprimido" checked={isComprimido} onChange={e => setIsComprimido(e.target.checked)} style={{ width: 'auto', margin: 0, cursor: 'pointer' }} />
+                                    <label htmlFor="isComprimido" style={{ margin: 0, fontWeight: 600, cursor: 'pointer' }}>Comprimido</label>
+                                </div>
+                                
+                                {isComprimido && (
+                                    <div className="flex gap-4 mb-6 animate-fade-in">
+                                        <div className="form-group flex-1 m-0"><label>Espessura Mínima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMin} onChange={e => setEspessuraMin(e.target.value)} /></div>
+                                        <div className="form-group flex-1 m-0"><label>Espessura Máxima Espec. (mm)</label><input type="text" className="form-control" required value={espessuraMax} onChange={e => setEspessuraMax(e.target.value)} /></div>
+                                        <div className="form-group flex-1 m-0">
+                                            <label>Média (Auto)</label>
+                                            <input type="text" className="form-control" disabled style={{ backgroundColor: '#f1f5f9' }} value={(!isNaN(parseFloat(espessuraMin.replace(',', '.'))) && !isNaN(parseFloat(espessuraMax.replace(',', '.')))) ? ((parseFloat(espessuraMin.replace(',', '.')) + parseFloat(espessuraMax.replace(',', '.'))) / 2).toFixed(2) : ''} />
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"><Save size={18} /> Cadastrar Manualmente</button>
+                            </form>
+                        </div>
 
-                        <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                        {/* Coluna 2: Importação em Massa */}
+                        <div className="card p-6 shadow-sm h-fit" style={{ width: '450px', flexShrink: 0 }}>
                             <div className="flex items-center gap-2 mb-4">
-                                <h4 className="m-0 text-secondary">Importação em Massa</h4>
-                                <Info size={16} className="text-secondary cursor-pointer" onClick={() => setShowExcelInfo(!showExcelInfo)} />
+                                <h3 className="m-0 text-primary w-full" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Importação em Massa</h3>
+                                <Info size={16} className="text-secondary cursor-pointer shrink-0" onClick={() => setShowExcelInfo(!showExcelInfo)} />
                             </div>
+                            
+                            <p className="text-sm text-secondary mb-4">Envie uma planilha com múltiplos produtos para cadastrá-los de uma vez.</p>
+                            
                             {showExcelInfo && (
                                 <div style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                                    A planilha deve conter as colunas nesta ordem (sem cabeçalho ou pulando-o): <strong>Código PI, Código PA, Produto PI, Produto PA, Espessura Mín. (opcional), Espessura Máx. (opcional)</strong>. <br/>Se as informações de espessura não forem preenchidas, será subentendido que não se trata de um comprimido.
+                                    A planilha deve conter as colunas nesta ordem (sem cabeçalho ou pulando-o): <strong>Código PI, Código PA, Produto PI, Produto PA, Espessura Mín. (opcional), Espessura Máx. (opcional)</strong>. <br/><br/>Se as informações de espessura não forem preenchidas, será subentendido que não se trata de um comprimido.
                                 </div>
                             )}
+                            
                             <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
                             <button type="button" className="btn btn-secondary w-full flex items-center justify-center gap-2 py-3" onClick={() => fileInputRef.current.click()}><Upload size={18} /> Fazer Upload de Planilha</button>
                         </div>
