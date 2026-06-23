@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { useEspessura } from '../contexts/EspessuraContext';
 import { Save, Upload, Trash2, CheckCircle2, AlertCircle, Info, ChevronRight, ChevronLeft, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Link } from 'react-router-dom';
 
 export default function CadastroProdutosEspessura() {
     const { produtos, addProduto, addProdutosEmMassa, deleteProduto } = useEspessura();

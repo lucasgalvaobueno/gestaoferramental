@@ -30,13 +30,13 @@ export default function ListaProdutosEspessura() {
             <Navbar breadcrumbs={[
                 { label: 'Painéis de acesso', to: '/home' }, 
                 { label: 'Gestão Ferramental', to: '/gestao-ferramental' }, 
-                { label: 'Cadastro de produtos', to: '/cadastros-espessura' },
+                { label: 'Cadastro de produtos', to: '/cadastro-produtos' },
                 { label: 'Lista de produtos' }
             ]} />
             
             <div className="container mx-auto p-4 flex-1 flex flex-col" style={{ maxWidth: '100%' }}>
                 <div className="flex items-center gap-2 mb-4">
-                    <Link to="/cadastros-espessura" className="btn btn-icon"><ArrowLeft /></Link>
+                    <Link to="/cadastro-produtos" className="btn btn-icon"><ArrowLeft /></Link>
                     <h2 className="m-0 text-primary">Lista de Produtos Cadastrados</h2>
                 </div>
 
