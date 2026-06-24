@@ -134,6 +134,52 @@ function TempPwModal({ user, onClose, onConfirm }) {
     );
 }
 
+function ConfirmAdminPasswordModal({ verifyAdminPassword, onClose, onConfirm }) {
+    const [senha, setSenha] = useState('');
+    const [show, setShow] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleConfirm = async () => {
+        if (!senha) {
+            setError('Digite a senha.');
+            return;
+        }
+        const isValid = await verifyAdminPassword(senha);
+        if (isValid) {
+            onConfirm();
+        } else {
+            setError('Senha de administrador incorreta.');
+        }
+    };
+
+    return (
+        <div className="modal-overlay" style={{opacity:1,visibility:'visible'}}>
+            <div className="modal animate-scale" style={{maxWidth:420}}>
+                <div className="modal-header">
+                    <h3 style={{margin:0}}>Confirmação de Segurança</h3>
+                    <button className="btn btn-icon" onClick={onClose}><X size={22}/></button>
+                </div>
+                <div className="modal-body">
+                    <p style={{fontSize:'0.875rem',color:'var(--text-secondary)',marginBottom:'1rem'}}>
+                        Esta ação requer privilégios de administrador. Confirme sua senha para continuar.
+                    </p>
+                    {error && <div className="user-form-error" style={{marginBottom:'1rem',color:'var(--danger-color)'}}>{error}</div>}
+                    <div className="form-group"><label>Senha do Administrador</label>
+                        <div style={{position:'relative'}}>
+                            <input type={show?'text':'password'} className="form-control" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="••••••••" style={{paddingRight:'2.5rem'}}/>
+                            <button type="button" onClick={()=>setShow(p=>!p)} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'var(--text-secondary)'}}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button>
+                        </div>
+                    </div>
+                </div>
+                <div className="modal-footer" style={{padding:'1rem 1.5rem'}}>
+                    <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+                    <button className="btn btn-primary" onClick={handleConfirm}><Shield size={16}/> Confirmar</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function Usuarios() {
     const { users, addUser, editUser, toggleUserStatus, resetUserPassword, currentUser, inactivityTimeoutMinutes, updateInactivityTimeout, verifyAdminPassword } = useUsers();
     const [activeTab, setActiveTab] = useState('lista');
@@ -145,6 +191,13 @@ export default function Usuarios() {
     const [editingUser, setEditingUser] = useState(null);
     const [tempPwUser, setTempPwUser] = useState(null);
     const [pendingAction, setPendingAction] = useState(null);
+    const [localTimeout, setLocalTimeout] = useState(inactivityTimeoutMinutes || 30);
+
+    React.useEffect(() => {
+        if (inactivityTimeoutMinutes) {
+            setLocalTimeout(inactivityTimeoutMinutes);
+        }
+    }, [inactivityTimeoutMinutes]);
 
     const requireAdminPassword = (actionFn) => {
         setPendingAction(() => actionFn);
@@ -333,17 +386,29 @@ export default function Usuarios() {
                             <p style={{fontSize:'0.85rem',color:'var(--text-secondary)',marginBottom:'0.5rem'}}>
                                 Se o usuário ficar inativo por este tempo, o sistema fará o logoff automaticamente.
                             </p>
-                            <input 
-                                type="number" 
-                                className="form-control" 
-                                style={{maxWidth: 150}}
-                                value={inactivityTimeoutMinutes} 
-                                onChange={e => {
-                                    const val = parseInt(e.target.value, 10);
-                                    if (val > 0) updateInactivityTimeout(val);
-                                }}
-                                min="1"
-                            />
+                            <div style={{display:'flex', gap:'1rem', alignItems:'center'}}>
+                                <input 
+                                    type="number" 
+                                    className="form-control" 
+                                    style={{maxWidth: 150}}
+                                    value={localTimeout} 
+                                    onChange={e => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val > 0) setLocalTimeout(val);
+                                        else if (e.target.value === '') setLocalTimeout('');
+                                    }}
+                                    min="1"
+                                />
+                                <button className="btn btn-primary" onClick={() => {
+                                    if (localTimeout > 0) {
+                                        requireAdminPassword(() => {
+                                            updateInactivityTimeout(localTimeout);
+                                        });
+                                    }
+                                }}>
+                                    <Save size={16}/> Salvar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
