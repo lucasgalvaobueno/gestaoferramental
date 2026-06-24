@@ -17,7 +17,7 @@ const PANELS = [
 export default function Home() {
     const { hasPanelAccess, currentUser } = useUsers();
     const isAdmin = currentUser?.nivel === 'admin';
-    const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosCompressao, itensDanificadosEmbalagem, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
+    const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosCompressao, itensDanificadosEmbalagem, conjuntosCompressaoNoLimite, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
     const [isAttentionPanelOpen, setIsAttentionPanelOpen] = useState(true);
     const renderPanels = () => (
         <div className="dashboard-grid">
@@ -175,6 +175,21 @@ export default function Home() {
                                                         {itensDanificadosCompressao.length > 5 && <li>E mais {itensDanificadosCompressao.length - 5}...</li>}
                                                     </ul>
                                                     <Link to="/compressao">Verificar em Compressão</Link>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {conjuntosCompressaoNoLimite?.length > 0 && (
+                                            <div className="notification-item" style={{ padding: '0.5rem 0' }}>
+                                                <div className="notification-icon" style={{ background: '#FFFBEB', color: '#D97706' }}><AlertTriangle size={16} /></div>
+                                                <div className="notification-content">
+                                                    <strong>{conjuntosCompressaoNoLimite.length} {conjuntosCompressaoNoLimite.length === 1 ? 'Conjunto de Compressão no limite de uso' : 'Conjuntos de Compressão no limite de uso'}</strong>
+                                                    <ul style={{ margin: '0.25rem 0 0', paddingLeft: '1.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                        {conjuntosCompressaoNoLimite.slice(0, 5).map(i => (
+                                                            <li key={i.id}>{i.numIdentificacao || i.numFormato}</li>
+                                                        ))}
+                                                        {conjuntosCompressaoNoLimite.length > 5 && <li>E mais {conjuntosCompressaoNoLimite.length - 5}...</li>}
+                                                    </ul>
+                                                    <Link to="/compressao">Verificar na Compressão</Link>
                                                 </div>
                                             </div>
                                         )}

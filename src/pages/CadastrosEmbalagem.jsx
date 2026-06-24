@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useEmbalagem } from '../contexts/EmbalagemContext';
+import { useEspessura } from '../contexts/EspessuraContext';
 import { ArrowLeft, Plus, X, List, History, User, FileText, Upload, Info, Eye, Edit2, Save, Trash2, Box, Filter, Search } from 'lucide-react';
 
 const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
@@ -78,6 +79,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
 
 export default function CadastrosEmbalagem() {
     const { items, logs, addItem, updateItem, deleteItem } = useEmbalagem();
+    const { produtos } = useEspessura();
 
     const [currentTab, setCurrentTab] = useState(''); // '', 'BPF5-50', 'MEDISEAL', 'itens_cadastrados'
     const [subCategoria, setSubCategoria] = useState('');
@@ -153,6 +155,13 @@ export default function CadastrosEmbalagem() {
         setNewProdutoNome('');
         setAnexoPdf(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleNewProdutoCodigoChange = (val) => {
+        setNewProdutoCodigo(val);
+        const prod = produtos.find(p => p.codigoPI === val);
+        if (prod) setNewProdutoNome(prod.produtoPI);
+        else setNewProdutoNome('');
     };
 
     const handleTabChange = (tab) => {
@@ -259,11 +268,14 @@ export default function CadastrosEmbalagem() {
             <div className="flex gap-2 items-end mb-2">
                 <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                     <label>Código do Produto</label>
-                    <input type="text" className="form-control" value={newProdutoCodigo} onChange={e => setNewProdutoCodigo(e.target.value)} />
+                    <input type="text" className="form-control" value={newProdutoCodigo} onChange={e => handleNewProdutoCodigoChange(e.target.value)} list="produtos-list" />
+                    <datalist id="produtos-list">
+                        {produtos.map(p => <option key={p.id} value={p.codigoPI} />)}
+                    </datalist>
                 </div>
                 <div className="form-group" style={{ flex: 2, marginBottom: 0 }}>
                     <label>Nome do Produto</label>
-                    <input type="text" className="form-control" value={newProdutoNome} onChange={e => setNewProdutoNome(e.target.value)} />
+                    <input type="text" className="form-control bg-light" disabled value={newProdutoNome || 'Nome automático...'} />
                 </div>
                 <button type="button" className="btn btn-secondary" onClick={addProduto}><Plus size={18} /></button>
             </div>

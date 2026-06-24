@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useManipulacao } from '../contexts/ManipulacaoContext';
+import { useEspessura } from '../contexts/EspessuraContext';
 import { ArrowLeft, Plus, X, List, History, User, Info, Edit2, Save, Eye, Trash2, AlertTriangle } from 'lucide-react';
 
 export default function CadastrosManipulacao() {
     const { items, logs, addItem, updateItem, deleteItem } = useManipulacao();
+    const { produtos } = useEspessura();
     
     const [currentTab, setCurrentTab] = useState('malhas'); 
     const [listCategoryFilter, setListCategoryFilter] = useState('Todas');
@@ -43,6 +45,13 @@ export default function CadastrosManipulacao() {
         setProdutosDedicados([]);
         setNewProdutoCodigo('');
         setNewProdutoNome('');
+    };
+
+    const handleNewProdutoCodigoChange = (val) => {
+        setNewProdutoCodigo(val);
+        const prod = produtos.find(p => p.codigoPI === val);
+        if (prod) setNewProdutoNome(prod.produtoPI);
+        else setNewProdutoNome('');
     };
 
     const handleTabChange = (tab) => {
@@ -110,11 +119,14 @@ export default function CadastrosManipulacao() {
             <div className="flex gap-2 items-end mb-2">
                 <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                     <label>Código do Produto</label>
-                    <input type="text" className="form-control" value={newProdutoCodigo} onChange={e => setNewProdutoCodigo(e.target.value)} />
+                    <input type="text" className="form-control" value={newProdutoCodigo} onChange={e => handleNewProdutoCodigoChange(e.target.value)} list="produtos-list" />
+                    <datalist id="produtos-list">
+                        {produtos.map(p => <option key={p.id} value={p.codigoPI} />)}
+                    </datalist>
                 </div>
                 <div className="form-group" style={{ flex: 2, marginBottom: 0 }}>
                     <label>Nome do Produto</label>
-                    <input type="text" className="form-control" value={newProdutoNome} onChange={e => setNewProdutoNome(e.target.value)} />
+                    <input type="text" className="form-control bg-light" disabled value={newProdutoNome || 'Nome automático...'} />
                 </div>
                 <button type="button" className="btn btn-secondary" onClick={addProduto}><Plus size={18} /></button>
             </div>
