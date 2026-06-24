@@ -253,7 +253,7 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
 
     return (
         <>
-        <div className="card p-6 animate-fade-in relative">
+        <div className="card p-3 animate-fade-in relative" style={{ boxShadow: 'none', border: '1px solid var(--border-color)' }}>
             {alertMsg && (
                 <div style={{
                     position: 'absolute', top: '1rem', right: '1rem', padding: '1rem 2rem', 
@@ -479,9 +479,9 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
         {/* ABA CADASTRADOS */}
         {currentTab === 'cadastrados' && (
             <div className="animate-fade-in mt-4">
-                <div className="mb-4">
-                    <button className="btn btn-secondary btn-sm flex items-center gap-2 mb-2" onClick={() => setShowFilters(!showFilters)} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-color)' }}>
-                        {showFilters ? <ChevronUp size={16} /> : <Filter size={16} />}
+                <div className="mb-3">
+                    <button onClick={() => setShowFilters(!showFilters)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem' }} className="flex items-center gap-1 mb-2 hover:text-primary transition-colors">
+                        {showFilters ? <ChevronUp size={14} /> : <Filter size={14} />}
                         {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
                     </button>
                     
@@ -514,16 +514,16 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                     )}
                 </div>
 
-                <div className="card p-0">
-                    <table className="table m-0">
-                        <thead>
+                <div className="card p-0" style={{ border: '1px solid var(--border-color)', boxShadow: 'none' }}>
+                    <table className="table m-0" style={{ fontSize: '0.9rem' }}>
+                        <thead style={{ backgroundColor: '#f8fafc' }}>
                             <tr>
-                                <th>Número</th>
-                                {categorias.includes('Compressão') && <th>Padrão</th>}
-                                <th>Equipamento(s)</th>
-                                {categorias.includes('Compressão') && <th>Uso Estimado</th>}
-                                <th>Status</th>
-                                <th className="text-center">PDF do projeto</th>
+                                <th style={{ padding: '0.75rem 1rem' }}>Número</th>
+                                {categorias.includes('Compressão') && <th style={{ padding: '0.75rem 1rem' }}>Padrão</th>}
+                                <th style={{ padding: '0.75rem 1rem' }}>Equipamento(s)</th>
+                                {categorias.includes('Compressão') && <th style={{ padding: '0.75rem 1rem' }}>Uso Estimado</th>}
+                                <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                                <th className="text-center" style={{ padding: '0.75rem 1rem' }}>PDF</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -538,31 +538,37 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                                 const trStyle = i.conjuntoReserva ? { backgroundColor: '#f3f4f6', color: '#6b7280' } : limitReached ? { backgroundColor: '#FEF2F2', borderLeft: '4px solid var(--danger-color)' } : (i.statusDanificado ? { backgroundColor: '#FEF2F2' } : {});
 
                                 return (
-                                    <tr key={i.id} style={trStyle}>
-                                        <td>
+                                    <tr key={i.id} style={{ ...trStyle, borderBottom: '1px solid #f1f5f9' }}>
+                                        <td style={{ padding: '0.5rem 1rem' }}>
                                             <div className="flex items-center gap-2">
-                                                {limitReached && <AlertTriangle size={16} className="text-danger" title="Atenção: Este conjunto atingiu 70% ou mais da estimativa de produção!" />}
-                                                <strong>{i.numIdentificacao || i.numFormato}</strong>
-                                                {i.conjuntoReserva && <span style={{fontSize: '0.7rem', padding: '0.2rem 0.4rem', backgroundColor: '#d1d5db', color: '#374151', borderRadius: '4px'}}>Reserva</span>}
+                                                {limitReached && <AlertTriangle size={14} className="text-danger" title="Atenção: Este conjunto atingiu 70% ou mais da estimativa de produção!" />}
+                                                <strong style={{ fontSize: '0.95rem' }}>{i.numIdentificacao || i.numFormato}</strong>
+                                                {i.conjuntoReserva && <span style={{fontSize: '0.65rem', padding: '0.1rem 0.3rem', backgroundColor: '#e5e7eb', color: '#4b5563', borderRadius: '4px'}}>Reserva</span>}
                                             </div>
                                         </td>
-                                        {categorias.includes('Compressão') && <td>{i.padraoPuncoes}</td>}
-                                        <td>{isCompressao ? (i.equipamentos?.join(', ') || '-') : i.equipamento}</td>
+                                        {categorias.includes('Compressão') && <td style={{ padding: '0.5rem 1rem', color: 'var(--text-secondary)' }}>{i.padraoPuncoes}</td>}
+                                        <td style={{ padding: '0.5rem 1rem', color: 'var(--text-secondary)' }}>
+                                            <div style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={isCompressao ? (i.equipamentos?.join(', ') || '-') : i.equipamento}>
+                                                {isCompressao ? (i.equipamentos?.join(', ') || '-') : i.equipamento}
+                                            </div>
+                                        </td>
                                         {categorias.includes('Compressão') && (
-                                            <td>
+                                            <td style={{ padding: '0.5rem 1rem' }}>
                                                 {i.estimativaProducao ? (
-                                                    <div className="text-sm">
-                                                        <div><strong>{produced.toLocaleString()}</strong> / {Number(i.estimativaProducao).toLocaleString()}</div>
-                                                        <div className={limitReached ? 'text-danger font-bold' : 'text-secondary'}>{percent.toFixed(1)}% utilizado</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div style={{ width: '60px', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                                                            <div style={{ width: `${Math.min(percent, 100)}%`, height: '100%', backgroundColor: limitReached ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
+                                                        </div>
+                                                        <span className={limitReached ? 'text-danger font-bold text-xs' : 'text-secondary text-xs'}>{percent.toFixed(0)}%</span>
                                                     </div>
                                                 ) : <span className="text-secondary">-</span>}
                                             </td>
                                         )}
-                                        <td>
+                                        <td style={{ padding: '0.5rem 1rem' }}>
                                             {i.statusDanificado ? (
-                                                <span className="text-danger flex items-center gap-1 text-sm"><AlertTriangle size={14}/> Danificado</span>
+                                                <span className="text-danger flex items-center gap-1 text-xs"><AlertTriangle size={12}/> Danificado</span>
                                             ) : (
-                                                <span className="text-success text-sm">Operacional</span>
+                                                <span className="text-success text-xs">Operacional</span>
                                             )}
                                         </td>
                                         <td className="text-center">
