@@ -16,6 +16,7 @@ import { EmbalagemProvider }   from './contexts/EmbalagemContext';
 import { ColaboradoresEmbalagemProvider } from './contexts/ColaboradoresEmbalagemContext';
 import { MovimentacoesEmbalagemProvider } from './contexts/MovimentacoesEmbalagemContext';
 import { EspessuraProvider }   from './contexts/EspessuraContext';
+import InactivityWatcher       from './components/InactivityWatcher';
 
 import Login        from './pages/Login';
 import Home         from './pages/Home';
@@ -75,8 +76,9 @@ export default function App() {
                                                                 <EspessuraProvider>
                                                                     <OrgProvider>
                                                                         <BrowserRouter>
-                                                        <Routes>
-                                            <Route path="/login"          element={<Login />} />
+                                                                            <InactivityWatcher />
+                                                                            <Routes>
+                                                                                <Route path="/login"          element={<Login />} />
                                             <Route path="/alterar-senha"  element={<TempPwRoute><AlterarSenha /></TempPwRoute>} />
                                             <Route path="/home"           element={<PrivateRoute><Home /></PrivateRoute>} />
                                             <Route path="/gestao-ferramental" element={<PrivateRoute><GestaoFerramental /></PrivateRoute>} />

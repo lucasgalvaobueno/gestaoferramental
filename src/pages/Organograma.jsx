@@ -265,6 +265,16 @@ export default function Organograma() {
         reader.readAsDataURL(file);
     };
 
+    const handleAddChild = (parentId) => {
+        addNode({
+            parentId: parentId,
+            nome: '',
+            cargo: '',
+            area: '',
+            isOpen: true
+        });
+    };
+
     const field = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 
     return (
@@ -398,7 +408,7 @@ export default function Organograma() {
                         {tree.length === 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
                                 <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>O organograma está vazio.</p>
-                                <button className="btn btn-primary flex items-center gap-2" onClick={() => addNode(null)}>
+                                <button className="btn btn-primary flex items-center gap-2" onClick={() => handleAddChild(null)}>
                                     <Plus size={18} /> Adicionar Primeiro Colaborador
                                 </button>
                             </div>
@@ -410,7 +420,7 @@ export default function Organograma() {
                                         node={root}
                                         childrenNodes={root.children}
                                         onEdit={handleEdit}
-                                        onAddChild={addNode}
+                                        onAddChild={handleAddChild}
                                         onView={setViewingNode}
                                     />
                                 ))}

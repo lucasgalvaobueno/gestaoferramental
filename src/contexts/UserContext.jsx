@@ -21,10 +21,21 @@ const encode = (str) => {
 export function UserProvider({ children }) {
     const [users, setUsers] = useState([]);
     const [currentUser, setCurrentUser] = useState(() => {
-        const stored = localStorage.getItem('@gestao/session');
+        const stored = sessionStorage.getItem('@gestao/session');
         return stored ? JSON.parse(stored) : null;
     });
     const [loading, setLoading] = useState(true);
+    
+    // Configuração de Inatividade (salva no localStorage da máquina)
+    const [inactivityTimeoutMinutes, setInactivityTimeoutMinutes] = useState(() => {
+        const stored = localStorage.getItem('@gestao/inactivity_timeout');
+        return stored ? parseInt(stored, 10) : 15; // 15 minutos padrão
+    });
+
+    const updateInactivityTimeout = (minutes) => {
+        setInactivityTimeoutMinutes(minutes);
+        localStorage.setItem('@gestao/inactivity_timeout', minutes.toString());
+    };
 
     const fetchUsers = async () => {
         const { data, error } = await supabase.from('usuarios').select('*');
@@ -52,12 +63,12 @@ export function UserProvider({ children }) {
     // ── Helpers ────────────────────────────────────────────────
     const saveSession = (user) => {
         setCurrentUser(user);
-        localStorage.setItem('@gestao/session', JSON.stringify(user));
+        sessionStorage.setItem('@gestao/session', JSON.stringify(user));
     };
 
     const clearSession = () => {
         setCurrentUser(null);
-        localStorage.removeItem('@gestao/session');
+        sessionStorage.removeItem('@gestao/session');
     };
 
     // ── Autenticação ───────────────────────────────────────────
@@ -100,6 +111,11 @@ export function UserProvider({ children }) {
     };
 
     const logout = () => clearSession();
+
+    const verifyAdminPassword = (senha) => {
+        if (!currentUser) return false;
+        return currentUser.senhahash === encode(senha);
+    };
 
     // Mantém compatibilidade com updateUser(name, photo) do Navbar antigo
     const updateUser = async (name, photo) => {
@@ -177,7 +193,7 @@ export function UserProvider({ children }) {
         if (currentUser?.id === id) {
             setCurrentUser(prev => {
                 const updated = { ...prev, ...dbUpdates };
-                localStorage.setItem('@gestao/session', JSON.stringify(updated));
+                sessionStorage.setItem('@gestao/session', JSON.stringify(updated));
                 return updated;
             });
         }
@@ -214,6 +230,9 @@ export function UserProvider({ children }) {
         resetUserPassword,
         toggleUserStatus,
         deleteUser,
+        inactivityTimeoutMinutes,
+        updateInactivityTimeout,
+        verifyAdminPassword,
         hasPanelAccess: (panelKey) => currentUser?.nivel === 'admin' || (currentUser?.paineis || []).includes(panelKey)
     };
 

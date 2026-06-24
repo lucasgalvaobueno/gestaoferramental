@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import { useUsers } from '../contexts/UserContext';
 import {
     Users, UserPlus, Edit2, Lock, Unlock, Key,
-    Shield, User, CheckCircle, XCircle, Eye, EyeOff, X, Save, ArrowLeft, Search
+    Shield, User, CheckCircle, XCircle, Eye, EyeOff, X, Save, ArrowLeft, Search, Settings
 } from 'lucide-react';
 
 const PANEL_KEYS = [
@@ -135,7 +135,7 @@ function TempPwModal({ user, onClose, onConfirm }) {
 }
 
 export default function Usuarios() {
-    const { users, addUser, editUser, toggleUserActive, setTemporaryPassword, currentUser } = useUsers();
+    const { users, addUser, editUser, toggleUserStatus, resetUserPassword, currentUser, inactivityTimeoutMinutes, updateInactivityTimeout, verifyAdminPassword } = useUsers();
     const [activeTab, setActiveTab] = useState('lista');
     const [search, setSearch] = useState('');
     const [showFilters, setShowFilters] = useState(false);
@@ -144,6 +144,11 @@ export default function Usuarios() {
     const [formError, setFormError] = useState('');
     const [editingUser, setEditingUser] = useState(null);
     const [tempPwUser, setTempPwUser] = useState(null);
+    const [pendingAction, setPendingAction] = useState(null);
+
+    const requireAdminPassword = (actionFn) => {
+        setPendingAction(() => actionFn);
+    };
 
     const togglePanel = k => setForm(p => ({ ...p, paineis: p.paineis.includes(k) ? p.paineis.filter(x=>x!==k) : [...p.paineis,k] }));
 
@@ -152,7 +157,11 @@ export default function Usuarios() {
         if (!form.nome||!form.email||!form.senha) { setFormError('Nome, e-mail e senha são obrigatórios.'); return; }
         if (form.senha !== form.confirmarSenha) { setFormError('As senhas não coincidem.'); return; }
         if (users.some(u=>u.email.toLowerCase()===form.email.toLowerCase())) { setFormError('E-mail já cadastrado.'); return; }
-        addUser(form); setForm(EMPTY_FORM); setActiveTab('lista');
+        requireAdminPassword(async () => {
+            await addUser(form); 
+            setForm(EMPTY_FORM); 
+            setActiveTab('lista');
+        });
     };
 
     const filtered = users.filter(u =>
@@ -193,6 +202,7 @@ export default function Usuarios() {
                 <div className="tabs mb-4">
                     <button className={`tab ${activeTab==='lista'?'active':''}`} onClick={()=>setActiveTab('lista')}><Users size={16}/> Usuários Cadastrados</button>
                     <button className={`tab ${activeTab==='novo'?'active':''}`} onClick={()=>setActiveTab('novo')}><UserPlus size={16}/> Novo Usuário</button>
+                    <button className={`tab ${activeTab==='configuracoes'?'active':''}`} onClick={()=>setActiveTab('configuracoes')}><Settings size={16}/> Configurações Gerais</button>
                 </div>
 
                 {/* ── Lista ── */}
@@ -250,7 +260,7 @@ export default function Usuarios() {
                                                 <div style={{display:'flex',gap:'0.4rem',justifyContent:'flex-end'}}>
                                                     <button className="btn btn-icon" title="Editar" onClick={()=>setEditingUser(u)} style={{color:'var(--primary-color)'}}><Edit2 size={16}/></button>
                                                     <button className="btn btn-icon" title={u.ativo?'Inativar':'Ativar'}
-                                                        onClick={()=>{ if(u.id===currentUser?.id){alert('Você não pode inativar seu próprio usuário.');return;} toggleUserActive(u.id); }}
+                                                        onClick={()=>{ if(u.id===currentUser?.id){alert('Você não pode inativar seu próprio usuário.');return;} requireAdminPassword(() => toggleUserStatus(u.id, !u.ativo)); }}
                                                         style={{color:u.ativo?'var(--danger-color)':'var(--success-color)'}}>
                                                         {u.ativo?<Lock size={16}/>:<Unlock size={16}/>}
                                                     </button>
@@ -313,10 +323,45 @@ export default function Usuarios() {
                         </form>
                     </div>
                 )}
+
+                {/* ── Configurações Gerais ── */}
+                {activeTab==='configuracoes' && (
+                    <div className="card" style={{padding:'2rem',maxWidth:700}}>
+                        <h3 style={{marginBottom:'1.5rem'}}>Configurações do Sistema</h3>
+                        <div className="form-group">
+                            <label>Tempo de Inatividade (minutos)</label>
+                            <p style={{fontSize:'0.85rem',color:'var(--text-secondary)',marginBottom:'0.5rem'}}>
+                                Se o usuário ficar inativo por este tempo, o sistema fará o logoff automaticamente.
+                            </p>
+                            <input 
+                                type="number" 
+                                className="form-control" 
+                                style={{maxWidth: 150}}
+                                value={inactivityTimeoutMinutes} 
+                                onChange={e => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (val > 0) updateInactivityTimeout(val);
+                                }}
+                                min="1"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {editingUser && <EditModal user={editingUser} onClose={()=>setEditingUser(null)} onSave={editUser}/>}
-            {tempPwUser  && <TempPwModal  user={tempPwUser}  onClose={()=>setTempPwUser(null)}  onConfirm={setTemporaryPassword}/>}
+            {editingUser && <EditModal user={editingUser} onClose={()=>setEditingUser(null)} onSave={(id, u) => requireAdminPassword(() => editUser(id, u))}/>}
+            {tempPwUser  && <TempPwModal  user={tempPwUser}  onClose={()=>setTempPwUser(null)}  onConfirm={(id, senha) => requireAdminPassword(() => resetUserPassword(id, senha))}/>}
+            
+            {pendingAction && (
+                <ConfirmAdminPasswordModal
+                    verifyAdminPassword={verifyAdminPassword}
+                    onClose={() => setPendingAction(null)}
+                    onConfirm={() => {
+                        pendingAction();
+                        setPendingAction(null);
+                    }}
+                />
+            )}
         </>
     );
 }
