@@ -41,6 +41,7 @@ export default function CadastrosCompressao() {
     const [newProdutoCodigo, setNewProdutoCodigo] = useState('');
     const [newProdutoNome, setNewProdutoNome] = useState('');
     const [estimativaProducao, setEstimativaProducao] = useState('');
+    const [conjuntoReserva, setConjuntoReserva] = useState(false);
     
     // Form states - Encapsulamento
     const [tipoEncapsulamento, setTipoEncapsulamento] = useState(''); // 'pellet' ou 'pó'
@@ -68,6 +69,7 @@ export default function CadastrosCompressao() {
         setNewProdutoCodigo('');
         setNewProdutoNome('');
         setEstimativaProducao('');
+        setConjuntoReserva(false);
         setTipoEncapsulamento('');
         setEquipamentoEncapsulamento('');
         setNumFormato('');
@@ -130,6 +132,7 @@ export default function CadastrosCompressao() {
             dedicadoProduto,
             produtosDedicados,
             estimativaProducao,
+            conjuntoReserva,
             anexoPdf
         });
         resetForm();
@@ -159,7 +162,7 @@ export default function CadastrosCompressao() {
                 tipoMatriz, qtdMatrizesSegmentos: Number(qtdMatrizesSegmentos),
                 equipamentos: selectedEquips,
                 dedicadoProduto, produtosDedicados,
-                estimativaProducao,
+                estimativaProducao, conjuntoReserva,
                 anexoPdf: anexoPdf || detailsItem.anexoPdf // Keep existing if not changed
             };
         } else {
@@ -298,6 +301,13 @@ export default function CadastrosCompressao() {
                 <input type="text" className="form-control" value={estimativaProducao} onChange={e => setEstimativaProducao(e.target.value)} placeholder="Ex: 5.000.000" />
             </div>
 
+            <div className="form-group mt-4">
+                <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+                    <input type="checkbox" checked={conjuntoReserva} onChange={e => setConjuntoReserva(e.target.checked)} />
+                    Conjunto reserva (não será disponibilizado para uso)
+                </label>
+            </div>
+
             {renderPdfUploader()}
         </>
     );
@@ -378,7 +388,7 @@ export default function CadastrosCompressao() {
             const isCompressao = item.categoria === 'Compressão';
             const limitReached = isCompressao && item.estimativaProducao ? ((item.comprimidosProduzidosTotais || 0) / item.estimativaProducao) >= 0.7 : false;
             
-            const trStyle = limitReached ? { backgroundColor: '#FEF2F2', borderLeft: '4px solid var(--danger-color)' } : {};
+            const trStyle = item.conjuntoReserva ? { backgroundColor: '#f3f4f6', color: '#6b7280' } : limitReached ? { backgroundColor: '#FEF2F2', borderLeft: '4px solid var(--danger-color)' } : {};
 
             const actions = (
                 <td style={{ verticalAlign: 'middle' }}>
@@ -397,6 +407,7 @@ export default function CadastrosCompressao() {
                         <div className="flex items-center gap-2">
                             {limitReached && <AlertTriangle size={16} className="text-danger" title="Atenção: Este conjunto atingiu 70% ou mais da estimativa de produção!" />}
                             <strong>{item.categoria}</strong>
+                            {item.conjuntoReserva && <span style={{fontSize: '0.7rem', padding: '0.2rem 0.4rem', backgroundColor: '#d1d5db', color: '#374151', borderRadius: '4px'}}>Reserva</span>}
                         </div>
                     </td>
                     <td>{item.numIdentificacao || item.numFormato}</td>
@@ -410,6 +421,7 @@ export default function CadastrosCompressao() {
                         <div className="flex items-center gap-2">
                             {limitReached && <AlertTriangle size={16} className="text-danger" title="Atenção: Este conjunto atingiu 70% ou mais da estimativa de produção!" />}
                             <strong>{item.numIdentificacao}</strong>
+                            {item.conjuntoReserva && <span style={{fontSize: '0.7rem', padding: '0.2rem 0.4rem', backgroundColor: '#d1d5db', color: '#374151', borderRadius: '4px'}}>Reserva</span>}
                         </div>
                     </td>
                     <td>{item.medidaPuncao}</td>
@@ -479,6 +491,7 @@ export default function CadastrosCompressao() {
             setDedicadoProduto(detailsItem.dedicadoProduto || false);
             setProdutosDedicados(detailsItem.produtosDedicados || []);
             setEstimativaProducao(detailsItem.estimativaProducao || '');
+            setConjuntoReserva(detailsItem.conjuntoReserva || false);
         } else {
             setTipoEncapsulamento(detailsItem.tipo || '');
             setEquipamentoEncapsulamento(detailsItem.equipamento || '');
@@ -603,6 +616,7 @@ export default function CadastrosCompressao() {
                                                 <div><span className="text-secondary block text-sm">ID Conjunto</span><strong>{detailsItem.numIdentificacao}</strong></div>
                                                 <div><span className="text-secondary block text-sm">Raio</span><strong>{detailsItem.raio}</strong></div>
                                                 <div><span className="text-secondary block text-sm">Estimativa Produzida</span><strong>{detailsItem.estimativaProducao || '-'}</strong></div>
+                                                <div><span className="text-secondary block text-sm">Conjunto Reserva</span><strong>{detailsItem.conjuntoReserva ? 'Sim' : 'Não'}</strong></div>
                                                 <div><span className="text-secondary block text-sm">Qtd. Superiores</span><strong>{detailsItem.qtdSuperiores}</strong></div>
                                                 <div><span className="text-secondary block text-sm">Qtd. Inferiores</span><strong>{detailsItem.qtdInferiores}</strong></div>
                                                 <div style={{ gridColumn: '1 / -1' }}><span className="text-secondary block text-sm">Tipo Conjunto Inferior</span><strong>{detailsItem.qtdMatrizesSegmentos} {detailsItem.tipoMatriz}</strong></div>

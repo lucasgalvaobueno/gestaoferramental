@@ -172,6 +172,7 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
         if (missingFields.length > 0) return showError(`Preencha: ${missingFields.join(', ')}`);
 
         if (selectedItem.statusDanificado) return showError('Este item está marcado como danificado. Não pode ser disponibilizado.');
+        if (selectedItem.conjuntoReserva) return showError('Este item é um conjunto reserva e não pode ser disponibilizado.');
         if (emUso.some(m => m.itemId === selectedItem.id)) return showError('Este item já está em uso.');
         if (!recebedorInfo) return showError('Recebedor não encontrado (Crachá inválido ou não cadastrado).');
         if (!produtoSelecionado) return showError('Produto não cadastrado. Insira um código válido.');
@@ -290,10 +291,11 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                         <label>Número de Identificação do Conjunto / Formato</label>
                         <input type="text" className="form-control" required value={numSearch} onChange={e => handleNumSearchChange(e.target.value)} list="num-list" placeholder="Digite para buscar..." />
                         <datalist id="num-list">
-                            {itensCadastradosAtivos.filter(i => !i.statusDanificado).map(i => <option key={i.id} value={i.numIdentificacao || i.numFormato} />)}
+                            {itensCadastradosAtivos.filter(i => !i.statusDanificado && !i.conjuntoReserva).map(i => <option key={i.id} value={i.numIdentificacao || i.numFormato} />)}
                         </datalist>
                         {numSearch && !selectedItem && <small className="text-danger mt-1 block">Item não encontrado ou obsoleto.</small>}
                         {selectedItem && selectedItem.statusDanificado && <small className="text-danger mt-1 block font-bold">Este item está danificado e não pode ser utilizado.</small>}
+                        {selectedItem && selectedItem.conjuntoReserva && <small className="text-danger mt-1 block font-bold">Este conjunto é um conjunto reserva e não pode ser disponibilizado.</small>}
                         {selectedItem && emUso.some(m => m.itemId === selectedItem.id) && <small className="text-danger mt-1 block font-bold">Este item já está registrado como "Em Uso".</small>}
                     </div>
 
@@ -533,7 +535,7 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                                 const estimativa = Number(i.estimativaProducao) || 1; 
                                 const percent = isCompressao ? (produced / estimativa) * 100 : 0;
                                 const limitReached = isCompressao && percent >= 70;
-                                const trStyle = limitReached ? { backgroundColor: '#FEF2F2', borderLeft: '4px solid var(--danger-color)' } : (i.statusDanificado ? { backgroundColor: '#FEF2F2' } : {});
+                                const trStyle = i.conjuntoReserva ? { backgroundColor: '#f3f4f6', color: '#6b7280' } : limitReached ? { backgroundColor: '#FEF2F2', borderLeft: '4px solid var(--danger-color)' } : (i.statusDanificado ? { backgroundColor: '#FEF2F2' } : {});
 
                                 return (
                                     <tr key={i.id} style={trStyle}>
@@ -541,6 +543,7 @@ export default function MovimentacaoCompressaoAba({ categorias, titulo }) {
                                             <div className="flex items-center gap-2">
                                                 {limitReached && <AlertTriangle size={16} className="text-danger" title="Atenção: Este conjunto atingiu 70% ou mais da estimativa de produção!" />}
                                                 <strong>{i.numIdentificacao || i.numFormato}</strong>
+                                                {i.conjuntoReserva && <span style={{fontSize: '0.7rem', padding: '0.2rem 0.4rem', backgroundColor: '#d1d5db', color: '#374151', borderRadius: '4px'}}>Reserva</span>}
                                             </div>
                                         </td>
                                         {categorias.includes('Compressão') && <td>{i.padraoPuncoes}</td>}
