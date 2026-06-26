@@ -153,6 +153,7 @@ export function UserProvider({ children }) {
             email: userData.email,
             senhahash: encode(userData.senha),
             cargo: userData.cargo,
+            photo: userData.photo,
             nivel: userData.nivel,
             paineis: userData.nivel === 'admin'
                 ? ALL_PANELS.map(p => p.key)

@@ -16,7 +16,7 @@ const PANEL_KEYS = [
 ];
 
 const EMPTY_FORM = {
-    nome: '', matricula: '', email: '', cargo: '',
+    nome: '', matricula: '', email: '', cargo: '', photo: '',
     senha: '', confirmarSenha: '', nivel: 'operador', paineis: [],
 };
 
@@ -30,7 +30,14 @@ function StatusBadge({ ativo }) {
         ? <span className="user-badge user-badge-active"><CheckCircle size={12}/> Ativo</span>
         : <span className="user-badge user-badge-inactive"><XCircle size={12}/> Inativo</span>;
 }
-function InitialAvatar({ nome, nivel }) {
+function InitialAvatar({ nome, nivel, photo }) {
+    if (photo) {
+        return (
+            <div style={{ width:36, height:36, borderRadius:'50%', overflow:'hidden', flexShrink:0 }}>
+                <img src={photo} alt={nome} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            </div>
+        );
+    }
     const bg = nivel === 'admin' ? '#4A7FA7' : '#10b981';
     return (
         <div style={{ width:36, height:36, borderRadius:'50%', background:bg, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'0.9rem', flexShrink:0 }}>
@@ -40,14 +47,14 @@ function InitialAvatar({ nome, nivel }) {
 }
 
 function EditModal({ user, onClose, onSave }) {
-    const [form, setForm] = useState({ nome: user.nome||'', matricula: user.matricula||'', email: user.email||'', cargo: user.cargo||'', nivel: user.nivel||'operador', paineis: user.paineis||[], senha:'', confirmarSenha:'' });
+    const [form, setForm] = useState({ nome: user.nome||'', matricula: user.matricula||'', email: user.email||'', cargo: user.cargo||'', photo: user.photo||'', nivel: user.nivel||'operador', paineis: user.paineis||[], senha:'', confirmarSenha:'' });
     const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const togglePanel = k => setForm(p => ({ ...p, paineis: p.paineis.includes(k) ? p.paineis.filter(x => x!==k) : [...p.paineis, k] }));
     const save = () => {
         if (!form.nome || !form.email) { setError('Nome e e-mail são obrigatórios.'); return; }
         if (form.senha && form.senha !== form.confirmarSenha) { setError('Senhas não coincidem.'); return; }
-        const u = { nome:form.nome, matricula:form.matricula, email:form.email, cargo:form.cargo, nivel:form.nivel, paineis:form.paineis };
+        const u = { nome:form.nome, matricula:form.matricula, email:form.email, cargo:form.cargo, photo:form.photo, nivel:form.nivel, paineis:form.paineis };
         if (form.senha) u.senha = form.senha;
         onSave(user.id, u); onClose();
     };
@@ -67,6 +74,10 @@ function EditModal({ user, onClose, onSave }) {
                     <div className="form-grid">
                         <div className="form-group"><label>E-mail *</label><input type="email" className="form-control" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}/></div>
                         <div className="form-group"><label>Cargo</label><input className="form-control" value={form.cargo} onChange={e=>setForm(p=>({...p,cargo:e.target.value}))}/></div>
+                    </div>
+                    <div className="form-group">
+                        <label>URL da Foto de Perfil</label>
+                        <input type="url" className="form-control" value={form.photo} onChange={e=>setForm(p=>({...p,photo:e.target.value}))} placeholder="https://exemplo.com/foto.jpg"/>
                     </div>
                     <div className="form-group">
                         <label>Nível de Acesso</label>
@@ -297,7 +308,7 @@ export default function Usuarios() {
                                         <tr key={u.id} style={{opacity:u.ativo?1:0.55}}>
                                             <td>
                                                 <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
-                                                    <InitialAvatar nome={u.nome} nivel={u.nivel}/>
+                                                    <InitialAvatar nome={u.nome} nivel={u.nivel} photo={u.photo}/>
                                                     <div>
                                                         <div style={{fontWeight:600}}>{u.nome}</div>
                                                         <div style={{fontSize:'0.75rem',color:'var(--text-secondary)'}}>{u.email}</div>
@@ -342,6 +353,10 @@ export default function Usuarios() {
                             <div className="form-grid">
                                 <div className="form-group"><label>E-mail *</label><input type="email" className="form-control" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="joao@empresa.com" required/></div>
                                 <div className="form-group"><label>Cargo</label><input className="form-control" value={form.cargo} onChange={e=>setForm(p=>({...p,cargo:e.target.value}))} placeholder="Ex: Analista"/></div>
+                            </div>
+                            <div className="form-group">
+                                <label>URL da Foto de Perfil</label>
+                                <input type="url" className="form-control" value={form.photo} onChange={e=>setForm(p=>({...p,photo:e.target.value}))} placeholder="https://exemplo.com/foto.jpg"/>
                             </div>
                             <div className="form-grid">
                                 <div className="form-group"><label>Senha *</label>
