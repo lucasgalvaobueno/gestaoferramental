@@ -43,7 +43,12 @@ export function UserProvider({ children }) {
             console.error('Erro ao buscar usuários:', error);
             return;
         }
-        setUsers(data || []);
+        const enrichedData = (data || []).map(u => {
+            const photo = localStorage.getItem(`@gestao/photo-${u.id}`);
+            if (photo) return { ...u, photo };
+            return u;
+        });
+        setUsers(enrichedData);
         setLoading(false);
     };
 
@@ -100,6 +105,9 @@ export function UserProvider({ children }) {
                 return { success: false, reason: 'invalid' };
             }
 
+            const photo = localStorage.getItem(`@gestao/photo-${data.id}`);
+            if (photo) data.photo = photo;
+
             saveSession(data);
             if (data.senhatemporaria) return { success: true, redirect: '/alterar-senha' };
             return { success: true, redirect: '/home' };
@@ -153,7 +161,6 @@ export function UserProvider({ children }) {
             email: userData.email,
             senhahash: encode(userData.senha),
             cargo: userData.cargo,
-            photo: userData.photo,
             nivel: userData.nivel,
             paineis: userData.nivel === 'admin'
                 ? ALL_PANELS.map(p => p.key)
@@ -166,6 +173,11 @@ export function UserProvider({ children }) {
         if (error) {
             console.error('Erro ao adicionar usuário:', error);
             throw error;
+        }
+        
+        if (userData.photo) {
+            localStorage.setItem(`@gestao/photo-${newUser.id}`, userData.photo);
+            newUser.photo = userData.photo;
         }
         
         setUsers(prev => [...prev, newUser]);
@@ -181,6 +193,15 @@ export function UserProvider({ children }) {
         if (updates.nivel === 'admin') {
             dbUpdates.paineis = ALL_PANELS.map(p => p.key);
         }
+        
+        if ('photo' in dbUpdates) {
+            if (dbUpdates.photo) {
+                localStorage.setItem(`@gestao/photo-${id}`, dbUpdates.photo);
+            } else {
+                localStorage.removeItem(`@gestao/photo-${id}`);
+            }
+            delete dbUpdates.photo;
+        }
 
         const { error } = await supabase.from('usuarios').update(dbUpdates).eq('id', id);
         if (error) {
@@ -188,12 +209,12 @@ export function UserProvider({ children }) {
             throw error;
         }
 
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...dbUpdates } : u));
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
 
         // Atualiza sessão se for o usuário logado
         if (currentUser?.id === id) {
             setCurrentUser(prev => {
-                const updated = { ...prev, ...dbUpdates };
+                const updated = { ...prev, ...updates };
                 sessionStorage.setItem('@gestao/session', JSON.stringify(updated));
                 return updated;
             });
