@@ -20,6 +20,17 @@ const EMPTY_FORM = {
     senha: '', confirmarSenha: '', nivel: 'operador', paineis: [],
 };
 
+const handlePhotoUpload = (e, setForm) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setForm(p => ({ ...p, photo: reader.result }));
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
 function NivelBadge({ nivel }) {
     return nivel === 'admin'
         ? <span className="user-badge user-badge-admin"><Shield size={12}/> Admin</span>
@@ -76,8 +87,11 @@ function EditModal({ user, onClose, onSave }) {
                         <div className="form-group"><label>Cargo</label><input className="form-control" value={form.cargo} onChange={e=>setForm(p=>({...p,cargo:e.target.value}))}/></div>
                     </div>
                     <div className="form-group">
-                        <label>URL da Foto de Perfil</label>
-                        <input type="url" className="form-control" value={form.photo} onChange={e=>setForm(p=>({...p,photo:e.target.value}))} placeholder="https://exemplo.com/foto.jpg"/>
+                        <label>Foto de Perfil</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <input type="file" accept="image/*" className="form-control" onChange={e => handlePhotoUpload(e, setForm)} style={{ flex: 1 }}/>
+                            {form.photo && <img src={form.photo} alt="Preview" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>}
+                        </div>
                     </div>
                     <div className="form-group">
                         <label>Nível de Acesso</label>
@@ -355,8 +369,11 @@ export default function Usuarios() {
                                 <div className="form-group"><label>Cargo</label><input className="form-control" value={form.cargo} onChange={e=>setForm(p=>({...p,cargo:e.target.value}))} placeholder="Ex: Analista"/></div>
                             </div>
                             <div className="form-group">
-                                <label>URL da Foto de Perfil</label>
-                                <input type="url" className="form-control" value={form.photo} onChange={e=>setForm(p=>({...p,photo:e.target.value}))} placeholder="https://exemplo.com/foto.jpg"/>
+                                <label>Foto de Perfil</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <input type="file" accept="image/*" className="form-control" onChange={e => handlePhotoUpload(e, setForm)} style={{ flex: 1 }}/>
+                                    {form.photo && <img src={form.photo} alt="Preview" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>}
+                                </div>
                             </div>
                             <div className="form-grid">
                                 <div className="form-group"><label>Senha *</label>
