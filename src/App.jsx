@@ -38,6 +38,7 @@ import Usuarios     from './pages/Usuarios';
 import AlterarSenha from './pages/AlterarSenha';
 import CadastroProdutosEspessura from './pages/CadastroProdutosEspessura';
 import ListaProdutosEspessura from './pages/ListaProdutosEspessura';
+import TrocaDeTurno from './pages/TrocaDeTurno';
 
 function PrivateRoute({ children }) {
     const { currentUser } = useAuth();
@@ -81,6 +82,7 @@ export default function App() {
                                                                                 <Route path="/login"          element={<Login />} />
                                             <Route path="/alterar-senha"  element={<TempPwRoute><AlterarSenha /></TempPwRoute>} />
                                             <Route path="/home"           element={<PrivateRoute><Home /></PrivateRoute>} />
+                                            <Route path="/troca-de-turno" element={<PrivateRoute><TrocaDeTurno /></PrivateRoute>} />
                                             <Route path="/gestao-ferramental" element={<PrivateRoute><GestaoFerramental /></PrivateRoute>} />
                                             <Route path="/gestao-ativos"  element={<PrivateRoute><GestaoAtivos /></PrivateRoute>} />
                                             <Route path="/capex"          element={<PrivateRoute><Capex /></PrivateRoute>} />

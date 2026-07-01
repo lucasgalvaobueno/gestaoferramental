@@ -1,0 +1,121 @@
+import React, { useState } from 'react';
+import { Send, Image as ImageIcon, User, X } from 'lucide-react';
+import { LazyImage } from './LazyImage';
+
+export const CommentSection = ({ postId, comments = [], onAddComment }) => {
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [showImageInput, setShowImageInput] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim() && !imageUrl.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await onAddComment(postId, { content, imageUrl });
+      setContent('');
+      setImageUrl('');
+      setShowImageInput(false);
+    } catch (error) {
+      console.error("Erro ao adicionar comentário:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+      }).format(date);
+    } catch {
+      return dateString;
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+      {/* Lista de Comentários */}
+      {comments.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+          {comments.map((comment) => (
+            <div key={comment.id} style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                {comment.author_photo ? (
+                  <img src={comment.author_photo} alt={comment.author_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={16} color="#64748b" />
+                )}
+              </div>
+              <div style={{ flex: 1, backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <span style={{ fontWeight: '600', fontSize: '0.875rem' }}>{comment.author_name}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{formatDate(comment.created_at)}</span>
+                </div>
+                {comment.content && <p style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>{comment.content}</p>}
+                {comment.image_url && (
+                  <div style={{ marginTop: '0.5rem', maxWidth: '300px' }}>
+                    <LazyImage src={comment.image_url} alt="Anexo do comentário" />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulário de Novo Comentário */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Escreva um comentário..."
+            style={{ flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', resize: 'none', minHeight: '40px', fontSize: '0.875rem', outline: 'none' }}
+            rows={1}
+            disabled={isSubmitting}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = (e.target.scrollHeight) + 'px';
+            }}
+          />
+          <button type="button" onClick={() => setShowImageInput(!showImageInput)} className="btn btn-secondary btn-icon" style={{ padding: '0.5rem' }} title="Anexar imagem">
+            <ImageIcon size={18} />
+          </button>
+          <button type="submit" className="btn btn-primary btn-icon" style={{ padding: '0.5rem' }} disabled={isSubmitting || (!content.trim() && !imageUrl.trim())}>
+            <Send size={18} />
+          </button>
+        </div>
+
+        {showImageInput && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '0.375rem' }}>
+            <input
+              type="url"
+              placeholder="URL da imagem (opcional)"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+              disabled={isSubmitting}
+            />
+            <button type="button" onClick={() => { setImageUrl(''); setShowImageInput(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+        
+        {/* Preview da imagem do comentário */}
+        {imageUrl && (
+          <div style={{ position: 'relative', width: 'fit-content', marginTop: '0.5rem' }}>
+            <img src={imageUrl} alt="Preview" style={{ maxHeight: '100px', borderRadius: '0.25rem' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />
+            <button type="button" onClick={() => setImageUrl('')} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <X size={12} />
+            </button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+};

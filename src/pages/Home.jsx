@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useUsers } from '../contexts/UserContext';
-import { Briefcase, FlaskConical, BoxSelect, Package, Layers, Lock, AlertTriangle, PackageX, Bell, ChevronRight, ChevronDown, ChevronUp, UserCog, CheckSquare, X, Ruler } from 'lucide-react';
+import { Briefcase, FlaskConical, BoxSelect, Package, Layers, Lock, AlertTriangle, PackageX, Bell, ChevronRight, ChevronDown, ChevronUp, UserCog, CheckSquare, X, Ruler, Users } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 const PANELS = [
@@ -21,6 +21,11 @@ export default function Home() {
     const [isAttentionPanelOpen, setIsAttentionPanelOpen] = useState(true);
     const renderPanels = () => (
         <div className="dashboard-grid">
+            <Link to="/troca-de-turno" className="dashboard-card" style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))', color: 'white' }}>
+                <Users size={48} style={{ color: 'white' }} />
+                <h3 style={{ color: 'white' }}>Troca de Turno</h3>
+                <span style={{ fontSize: '0.75rem', opacity: 0.9 }}>Feed & Notificações</span>
+            </Link>
             {PANELS.map(({ key, label, icon: Icon, to }) => {
                 const allowed = hasPanelAccess(key);
 
