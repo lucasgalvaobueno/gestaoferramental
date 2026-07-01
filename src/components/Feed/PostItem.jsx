@@ -92,7 +92,7 @@ export const PostItem = ({ post, onLike, onAddComment }) => {
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           <MessageSquare size={18} />
-          Comentar
+          Comentários
         </button>
       </div>
 

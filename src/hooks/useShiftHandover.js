@@ -8,6 +8,7 @@ export const useShiftHandover = () => {
   // const { sendNotification } = useNotifications(); // Assuming this is available, or we might need to rely on the notification context/hook as imported in Home.jsx
 
   const [posts, setPosts] = useState([]);
+  const [feedNotifications, setFeedNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -75,13 +76,42 @@ export const useShiftHandover = () => {
     }
   }, [currentUser, isLoading, hasMore]);
 
+  const fetchFeedNotifications = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('post_notificacoes')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('lida', false)
+        .order('created_at', { ascending: false });
+        
+      if (!error && data) {
+        setFeedNotifications(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar notificações do feed', err);
+    }
+  }, [currentUser]);
+
   // Carregamento inicial
   useEffect(() => {
     if (currentUser) {
       fetchPosts(0, true);
+      fetchFeedNotifications();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
+
+  const markFeedNotificationRead = async (id) => {
+    setFeedNotifications(prev => prev.filter(n => n.id !== id));
+    if (id) {
+      await supabase.from('post_notificacoes').update({ lida: true }).eq('id', id);
+    } else {
+      // Mark all as read
+      await supabase.from('post_notificacoes').update({ lida: true }).eq('user_id', currentUser.id);
+    }
+  };
 
   const toggleLike = async (postId, currentState) => {
     // 1. Optimistic Update
@@ -110,7 +140,14 @@ export const useShiftHandover = () => {
           .from('post_likes')
           .insert([{ post_id: postId, user_id: currentUser.id }]);
           
-        // Lógica de notificação poderia ir aqui (ex: inserir na tabela de notificações)
+        // Notification
+        const targetPost = posts.find(p => p.id === postId);
+        if (targetPost && targetPost.author_id !== currentUser.id) {
+          await supabase.from('post_notificacoes').insert([{
+            user_id: targetPost.author_id,
+            message: `${currentUser.nome || currentUser.name} curtiu sua publicação.`
+          }]);
+        }
       }
     } catch (error) {
       console.error("Erro ao processar like:", error);
@@ -168,6 +205,15 @@ export const useShiftHandover = () => {
         .single();
 
       if (error) throw error;
+
+      // Notification
+      const targetPost = posts.find(p => p.id === postId);
+      if (targetPost && targetPost.author_id !== currentUser.id) {
+        await supabase.from('post_notificacoes').insert([{
+          user_id: targetPost.author_id,
+          message: `${currentUser.nome || currentUser.name} comentou na sua publicação.`
+        }]);
+      }
 
       // Update local state
       setPosts(prev => prev.map(post => {
@@ -231,6 +277,8 @@ export const useShiftHandover = () => {
 
   return {
     posts,
+    feedNotifications,
+    markFeedNotificationRead,
     isLoading,
     hasMore,
     fetchPosts,

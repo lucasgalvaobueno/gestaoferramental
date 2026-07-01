@@ -3,6 +3,7 @@ import { useUsers } from '../contexts/UserContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogOut, User, Users, ChevronRight, Bell, AlertTriangle, Briefcase, PackageX, CheckCircle2, CheckSquare, X } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { useShiftHandover } from '../hooks/useShiftHandover';
 
 export default function Navbar({ breadcrumbs }) {
     const { currentUser, logout } = useUsers();
@@ -14,20 +15,22 @@ export default function Navbar({ breadcrumbs }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationsRef = useRef(null);
     const { ativosPendentes, rcsAtrasadas, vagasAbertas, tarefasAtrasadasOuProximas, novasTarefasAtribuidas, itensDanificadosManipulacao, itensDanificadosEmbalagem, conjuntosCompressaoNoLimite, totalNotificacoes, marcarTarefaComoLida } = useNotifications();
-    
+    const { feedNotifications = [], markFeedNotificationRead } = useShiftHandover();
     const [hasUnseen, setHasUnseen] = useState(false);
     const [lastSeenCount, setLastSeenCount] = useState(() => {
         const stored = localStorage.getItem('@gestao-ferramental/lastSeenNotifications');
         return stored ? parseInt(stored, 10) : 0;
     });
 
+    const grandTotalNotificacoes = totalNotificacoes + feedNotifications.length;
+
     useEffect(() => {
-        if (totalNotificacoes > lastSeenCount) {
+        if (grandTotalNotificacoes > lastSeenCount) {
             setHasUnseen(true);
         } else {
             setHasUnseen(false);
         }
-    }, [totalNotificacoes, lastSeenCount]);
+    }, [grandTotalNotificacoes, lastSeenCount]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -76,22 +79,22 @@ export default function Navbar({ breadcrumbs }) {
                             onClick={() => {
                                 if (!showNotifications) {
                                     setHasUnseen(false);
-                                    setLastSeenCount(totalNotificacoes);
-                                    localStorage.setItem('@gestao-ferramental/lastSeenNotifications', totalNotificacoes.toString());
+                                    setLastSeenCount(grandTotalNotificacoes);
+                                    localStorage.setItem('@gestao-ferramental/lastSeenNotifications', grandTotalNotificacoes.toString());
                                 }
                                 setShowNotifications(!showNotifications);
                             }}
                             title="Central de Notificações"
                         >
                             <Bell size={24} />
-                            {(hasUnseen && totalNotificacoes > 0) && (
+                            {(hasUnseen && grandTotalNotificacoes > 0) && (
                                 <span style={{
                                     position: 'absolute', top: -2, right: -2, background: 'var(--danger-color)', 
                                     color: 'white', fontSize: '0.65rem', fontWeight: 'bold', 
                                     width: 18, height: 18, borderRadius: '50%', display: 'flex', 
                                     alignItems: 'center', justifyContent: 'center', border: '2px solid #1A2F5A'
                                 }}>
-                                    {totalNotificacoes}
+                                    {grandTotalNotificacoes}
                                 </span>
                             )}
                         </button>
@@ -109,13 +112,28 @@ export default function Navbar({ breadcrumbs }) {
                                     </h3>
                                 </div>
                                 <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
-                                    {totalNotificacoes === 0 ? (
+                                    {grandTotalNotificacoes === 0 ? (
                                         <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                                             <CheckCircle2 size={32} style={{ margin: '0 auto 0.5rem', color: 'var(--success-color)', opacity: 0.5 }} />
                                             Nenhuma pendência no momento.
                                         </div>
                                     ) : (
                                         <>
+                                            {feedNotifications.length > 0 && feedNotifications.map(notification => (
+                                                <div key={notification.id} className="notification-item">
+                                                    <div className="notification-icon" style={{ background: '#E0E7FF', color: '#4F46E5' }}><Users size={16} /></div>
+                                                    <div className="notification-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <strong>Troca de Turno</strong>
+                                                            <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{notification.message}</p>
+                                                            <Link to="/troca-de-turno" onClick={() => { markFeedNotificationRead(notification.id); setShowNotifications(false); }}>Ver post</Link>
+                                                        </div>
+                                                        <button className="btn btn-icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markFeedNotificationRead(notification.id); }} title="Marcar como lido" style={{ padding: '0.25rem', height: 'auto', width: 'auto' }}>
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                             {ativosPendentes.length > 0 && (
                                                 <div className="notification-item">
                                                     <div className="notification-icon" style={{ background: '#FEF2F2', color: 'var(--danger-color)' }}><PackageX size={16} /></div>
