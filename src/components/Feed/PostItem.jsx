@@ -111,6 +111,11 @@ export const PostItem = ({ post, onLike, onAddComment }) => {
           onAddComment={onAddComment} 
         />
       )}
+
+      {/* Modal de Imagem Ampliada para o Post */}
+      {zoomedImage && (
+        <ImageModal imageUrl={zoomedImage} onClose={() => setZoomedImage(null)} />
+      )}
     </div>
   );
 };
