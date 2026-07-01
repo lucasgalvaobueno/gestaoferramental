@@ -61,11 +61,11 @@ export const CommentSection = ({ postId, comments = [], onAddComment }) => {
                 </div>
                 {comment.content && <p style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>{comment.content}</p>}
                 {comment.image_url && (
-                  <div style={{ marginTop: '0.5rem', cursor: 'zoom-in', width: '100%', maxWidth: '300px', borderRadius: '0.5rem', overflow: 'hidden', backgroundColor: '#f8fafc' }} onClick={() => setZoomedImage(comment.image_url)}>
+                  <div style={{ marginTop: '0.5rem', cursor: 'zoom-in', width: '100%', maxWidth: '300px', borderRadius: '0.5rem', backgroundColor: '#f1f5f9', display: 'flex', justifyContent: 'center' }} onClick={() => setZoomedImage(comment.image_url)}>
                     <img 
                       src={comment.image_url} 
                       alt="Anexo do comentário" 
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block', transition: 'opacity 0.2s' }} 
+                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block', transition: 'opacity 0.2s', borderRadius: '0.5rem' }} 
                       onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
                       onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
                     />

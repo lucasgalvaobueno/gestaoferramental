@@ -61,13 +61,12 @@ export const PostItem = ({ post, onLike, onAddComment }) => {
         </p>
       </div>
 
-      {/* Image Attachment */}
       {post.image_url && (
-        <div style={{ marginBottom: '1rem', width: '100%', overflow: 'hidden', borderRadius: '0.5rem', cursor: 'zoom-in', backgroundColor: '#f8fafc' }} onClick={() => setZoomedImage(post.image_url)}>
+        <div style={{ marginBottom: '1rem', width: '100%', borderRadius: '0.5rem', cursor: 'zoom-in', backgroundColor: '#f1f5f9', display: 'flex', justifyContent: 'center' }} onClick={() => setZoomedImage(post.image_url)}>
           <img 
             src={post.image_url} 
             alt="Anexo da publicação" 
-            style={{ width: '100%', height: '250px', objectFit: 'cover', display: 'block', transition: 'opacity 0.2s' }} 
+            style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block', transition: 'opacity 0.2s', borderRadius: '0.5rem' }} 
             onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
             onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
           />

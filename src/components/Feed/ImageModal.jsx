@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ZoomIn, ZoomOut } from 'lucide-react';
 
 export const ImageModal = ({ imageUrl, onClose }) => {
@@ -10,9 +11,15 @@ export const ImageModal = ({ imageUrl, onClose }) => {
 
   // Prevent background scrolling
   useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
     };
   }, []);
 
@@ -66,19 +73,19 @@ export const ImageModal = ({ imageUrl, onClose }) => {
     };
   }, []);
 
-  return (
+  return createPortal(
     <div 
       ref={modalRef}
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2147483647, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <button 
         onClick={onClose} 
-        style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'white', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10000 }}
+        style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'white', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2147483647 }}
       >
         <X size={24} />
       </button>
 
-      <div style={{ position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem', zIndex: 10000 }}>
+      <div style={{ position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem', zIndex: 2147483647 }}>
         <button onClick={() => setScale(s => Math.min(s + 0.5, 5))} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Aproximar">
           <ZoomIn size={20} />
         </button>
@@ -110,12 +117,13 @@ export const ImageModal = ({ imageUrl, onClose }) => {
           style={{ 
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, 
             transition: isDragging ? 'none' : 'transform 0.1s',
-            maxHeight: '90vh',
-            maxWidth: '90vw',
+            maxHeight: '100vh',
+            maxWidth: '100vw',
             objectFit: 'contain'
           }} 
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
