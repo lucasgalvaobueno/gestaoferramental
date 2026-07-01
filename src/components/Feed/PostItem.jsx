@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, User, Clock, MapPin } from 'lucide-react';
 import { LazyImage } from './LazyImage';
 import { CommentSection } from './CommentSection';
+import { ImageModal } from './ImageModal';
 
 export const PostItem = ({ post, onLike, onAddComment }) => {
   const [showComments, setShowComments] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   const formatDate = (dateString) => {
     try {
@@ -61,8 +63,14 @@ export const PostItem = ({ post, onLike, onAddComment }) => {
 
       {/* Image Attachment */}
       {post.image_url && (
-        <div style={{ marginBottom: '1rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-          <LazyImage src={post.image_url} alt="Anexo da publicação" />
+        <div style={{ marginBottom: '1rem', width: '100%', overflow: 'hidden', borderRadius: '0.5rem', cursor: 'zoom-in', backgroundColor: '#f8fafc' }} onClick={() => setZoomedImage(post.image_url)}>
+          <img 
+            src={post.image_url} 
+            alt="Anexo da publicação" 
+            style={{ width: '100%', height: '250px', objectFit: 'cover', display: 'block', transition: 'opacity 0.2s' }} 
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          />
         </div>
       )}
 

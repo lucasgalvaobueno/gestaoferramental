@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Send, Image as ImageIcon, User, X } from 'lucide-react';
 import { LazyImage } from './LazyImage';
+import { ImageModal } from './ImageModal';
 
 export const CommentSection = ({ postId, comments = [], onAddComment }) => {
   const [content, setContent] = useState('');
+  const [zoomedImage, setZoomedImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -59,8 +61,14 @@ export const CommentSection = ({ postId, comments = [], onAddComment }) => {
                 </div>
                 {comment.content && <p style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>{comment.content}</p>}
                 {comment.image_url && (
-                  <div style={{ marginTop: '0.5rem', maxWidth: '300px' }}>
-                    <LazyImage src={comment.image_url} alt="Anexo do comentário" />
+                  <div style={{ marginTop: '0.5rem', cursor: 'zoom-in', width: '100%', maxWidth: '300px', borderRadius: '0.5rem', overflow: 'hidden', backgroundColor: '#f8fafc' }} onClick={() => setZoomedImage(comment.image_url)}>
+                    <img 
+                      src={comment.image_url} 
+                      alt="Anexo do comentário" 
+                      style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block', transition: 'opacity 0.2s' }} 
+                      onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                      onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                    />
                   </div>
                 )}
               </div>
@@ -123,6 +131,11 @@ export const CommentSection = ({ postId, comments = [], onAddComment }) => {
           </div>
         )}
       </form>
+
+      {/* Modal de Imagem Ampliada para Comentários */}
+      {zoomedImage && (
+        <ImageModal imageUrl={zoomedImage} onClose={() => setZoomedImage(null)} />
+      )}
     </div>
   );
 };
