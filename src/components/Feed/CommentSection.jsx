@@ -5,18 +5,20 @@ import { LazyImage } from './LazyImage';
 export const CommentSection = ({ postId, comments = [], onAddComment }) => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [showImageInput, setShowImageInput] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim() && !imageUrl.trim()) return;
+    if (!content.trim() && !imageFile) return;
 
     setIsSubmitting(true);
     try {
-      await onAddComment(postId, { content, imageUrl });
+      await onAddComment(postId, { content, imageFile });
       setContent('');
-      setImageUrl('');
+      setImageFile(null);
+      setImagePreview(null);
       setShowImageInput(false);
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error);
@@ -85,7 +87,7 @@ export const CommentSection = ({ postId, comments = [], onAddComment }) => {
           <button type="button" onClick={() => setShowImageInput(!showImageInput)} className="btn btn-secondary btn-icon" style={{ padding: '0.5rem' }} title="Anexar imagem">
             <ImageIcon size={18} />
           </button>
-          <button type="submit" className="btn btn-primary btn-icon" style={{ padding: '0.5rem' }} disabled={isSubmitting || (!content.trim() && !imageUrl.trim())}>
+          <button type="submit" className="btn btn-primary btn-icon" style={{ padding: '0.5rem' }} disabled={isSubmitting || (!content.trim() && !imageFile)}>
             <Send size={18} />
           </button>
         </div>
@@ -93,24 +95,29 @@ export const CommentSection = ({ postId, comments = [], onAddComment }) => {
         {showImageInput && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '0.375rem' }}>
             <input
-              type="url"
-              placeholder="URL da imagem (opcional)"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setImageFile(file);
+                  setImagePreview(URL.createObjectURL(file));
+                }
+              }}
+              style={{ flex: 1, fontSize: '0.875rem' }}
               disabled={isSubmitting}
             />
-            <button type="button" onClick={() => { setImageUrl(''); setShowImageInput(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+            <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setShowImageInput(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
               <X size={16} />
             </button>
           </div>
         )}
         
         {/* Preview da imagem do comentário */}
-        {imageUrl && (
+        {imagePreview && (
           <div style={{ position: 'relative', width: 'fit-content', marginTop: '0.5rem' }}>
-            <img src={imageUrl} alt="Preview" style={{ maxHeight: '100px', borderRadius: '0.25rem' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />
-            <button type="button" onClick={() => setImageUrl('')} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <img src={imagePreview} alt="Preview" style={{ maxHeight: '100px', borderRadius: '0.25rem' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />
+            <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={12} />
             </button>
           </div>

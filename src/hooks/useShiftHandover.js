@@ -128,15 +128,37 @@ export const useShiftHandover = () => {
     }
   };
 
-  const addComment = async (postId, { content, imageUrl }) => {
+  const uploadImage = async (file) => {
+    if (!file) return null;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${currentUser.id}/${fileName}`;
+    
+    // Faz o upload para o bucket 'turn_images'
+    const { error: uploadError } = await supabase.storage
+      .from('turn_images')
+      .upload(filePath, file);
+      
+    if (uploadError) throw uploadError;
+    
+    const { data } = supabase.storage.from('turn_images').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const addComment = async (postId, { content, imageFile }) => {
     try {
+      let finalImageUrl = null;
+      if (imageFile) {
+        finalImageUrl = await uploadImage(imageFile);
+      }
+
       const newComment = {
         post_id: postId,
         author_id: currentUser.id,
         author_name: currentUser.nome || currentUser.name,
         author_photo: currentUser.photo || null,
         content,
-        image_url: imageUrl || null
+        image_url: finalImageUrl
       };
 
       const { data, error } = await supabase
@@ -165,15 +187,20 @@ export const useShiftHandover = () => {
     }
   };
 
-  const addPost = async ({ content, imageUrl, area }) => {
+  const addPost = async ({ content, imageFile, area }) => {
     try {
+      let finalImageUrl = null;
+      if (imageFile) {
+        finalImageUrl = await uploadImage(imageFile);
+      }
+
       const newPost = {
         author_id: currentUser.id,
         author_name: currentUser.nome || currentUser.name,
         author_photo: currentUser.photo || null,
-        area: area || (currentUser.paineis?.[0] || 'Geral'), // Default to first area if none selected
+        area: area || (currentUser.paineis?.[0] || 'geral'), // Default to first area if none selected
         content,
-        image_url: imageUrl || null
+        image_url: finalImageUrl
       };
 
       const { data, error } = await supabase

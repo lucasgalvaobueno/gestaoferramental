@@ -2,18 +2,23 @@ import React, { useRef, useCallback, useState } from 'react';
 import { PostItem } from './PostItem';
 import { FeedSkeleton } from './FeedSkeleton';
 import { useShiftHandover } from '../../hooks/useShiftHandover';
-import { useAuth } from '../../contexts/UserContext';
+import { useAuth, ALL_PANELS } from '../../contexts/UserContext';
 import { Image as ImageIcon, Send, X } from 'lucide-react';
 
 export const ShiftHandoverFeed = () => {
   const { currentUser } = useAuth();
   const { posts, isLoading, hasMore, fetchPosts, page, toggleLike, addComment, addPost } = useShiftHandover();
   
-  // Create Post state
+  
+  const availablePanels = currentUser?.nivel === 'admin' 
+    ? ALL_PANELS 
+    : ALL_PANELS.filter(p => (currentUser?.paineis || []).includes(p.key));
+
   const [content, setContent] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [showImageInput, setShowImageInput] = useState(false);
-  const [selectedArea, setSelectedArea] = useState(currentUser?.nivel === 'admin' ? '' : (currentUser?.paineis?.[0] || 'Geral'));
+  const [selectedArea, setSelectedArea] = useState(availablePanels[0]?.key || 'geral');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const observerRef = useRef(null);
@@ -33,13 +38,14 @@ export const ShiftHandoverFeed = () => {
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!content.trim() && !imageUrl.trim()) return;
+    if (!content.trim() && !imageFile) return;
 
     setIsSubmitting(true);
     try {
-      await addPost({ content, imageUrl, area: selectedArea || 'Geral' });
+      await addPost({ content, imageFile, area: selectedArea });
       setContent('');
-      setImageUrl('');
+      setImageFile(null);
+      setImagePreview(null);
       setShowImageInput(false);
     } catch (error) {
       console.error("Erro ao publicar:", error);
@@ -47,10 +53,6 @@ export const ShiftHandoverFeed = () => {
       setIsSubmitting(false);
     }
   };
-
-  const userAreas = currentUser?.nivel === 'admin' 
-    ? ['Geral', 'Gestão Ferramental', 'Manipulação', 'Compressão', 'Embalagem', 'Não Sólidos'] 
-    : (currentUser?.paineis || ['Geral']);
 
   return (
     <div className="max-w-2xl mx-auto w-full pb-20" style={{ maxWidth: '42rem', margin: '0 auto', width: '100%', paddingBottom: '5rem' }}>
@@ -80,23 +82,28 @@ export const ShiftHandoverFeed = () => {
           {showImageInput && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '0.375rem', marginBottom: '1rem' }}>
               <input
-                type="url"
-                placeholder="URL da imagem (opcional)"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+                style={{ flex: 1, fontSize: '0.875rem' }}
                 disabled={isSubmitting}
               />
-              <button type="button" onClick={() => { setImageUrl(''); setShowImageInput(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setShowImageInput(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
                 <X size={16} />
               </button>
             </div>
           )}
 
-          {imageUrl && (
+          {imagePreview && (
             <div style={{ position: 'relative', width: 'fit-content', marginBottom: '1rem' }}>
-              <img src={imageUrl} alt="Preview" style={{ maxHeight: '150px', borderRadius: '0.25rem' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />
-              <button type="button" onClick={() => setImageUrl('')} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <img src={imagePreview} alt="Preview" style={{ maxHeight: '150px', borderRadius: '0.25rem' }} onError={(e) => e.target.style.display = 'none'} onLoad={(e) => e.target.style.display = 'block'} />
+              <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <X size={12} />
               </button>
             </div>
@@ -115,13 +122,13 @@ export const ShiftHandoverFeed = () => {
                 style={{ padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', fontSize: '0.875rem', backgroundColor: '#f8fafc' }}
                 disabled={isSubmitting}
               >
-                {userAreas.map(area => (
-                  <option key={area} value={area}>{area}</option>
+                {availablePanels.map(area => (
+                  <option key={area.key} value={area.key}>{area.label}</option>
                 ))}
               </select>
             </div>
             
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting || (!content.trim() && !imageUrl.trim())} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting || (!content.trim() && !imageFile)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Send size={18} /> Publicar
             </button>
           </div>
